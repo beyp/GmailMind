@@ -591,37 +591,167 @@ def _print_module_help(module: str):
     console.print(Panel(h, title=f"💡 Aide — Module {module.capitalize()}", border_style="cyan"))
 
 
+def _verify_action(service, sample_id: str, action: str) -> bool:
+    """
+    Vérifie qu'une action a bien été appliquée sur un email test.
+    Retourne True si OK, False si l'API a accepté mais n'a rien fait.
+    """
+    try:
+        msg = service.users().messages().get(
+            userId="me", id=sample_id, format="minimal"
+        ).execute()
+        labels = msg.get("labelIds", [])
+        if action == "DELETE":
+            # Doit avoir le label TRASH ou ne plus exister
+            return "TRASH" in labels
+        elif action == "ARCHIVE":
+            # Ne doit plus avoir le label INBOX
+            return "INBOX" not in labels
+        elif action == "TRASH":
+            return "TRASH" in labels
+    except Exception:
+        # 404 = message supprimé définitivement = succès batchDelete
+        return True
+    return False
+
+
 def _execute_mail_action(service, emails: list, indices: set, action: str):
-    """Supprime ou archive les emails dont l'index est dans `indices`."""
+    """
+    Supprime ou archive les emails dont l'index est dans `indices`.
+
+    Stratégie de suppression (du plus sûr au plus définitif) :
+      TRASH  → Corbeille Gmail  (récupérable 30j, fonctionne toujours)
+      DELETE → Suppression définitive via batchDelete
+      ARCHIVE→ Retrait du label INBOX (archivage)
+    """
     targets = [emails[i-1] for i in sorted(indices) if 1 <= i <= len(emails)]
     if not targets:
         console.print("[yellow]⚠️  Aucun email sélectionné.[/yellow]")
         return
 
-    verb  = "supprimés" if action == "DELETE" else "archivés"
-    label = f"[red]🗑️  Suppression[/red]" if action == "DELETE" else "[blue]📁 Archivage[/blue]"
+    verb  = ("mis à la corbeille" if action == "TRASH"
+             else "supprimés définitivement" if action == "DELETE"
+             else "archivés")
+    icon  = ("🗑️ " if action in ("TRASH","DELETE") else "📁")
+    color = ("red" if action in ("TRASH","DELETE") else "blue")
 
     console.print(Panel(
-        f"{label} de [bold]{len(targets)}[/bold] email(s) :\n" +
-        "\n".join(f"  • {m['subject'][:60]}" for m in targets[:8]) +
+        f"[{color}]{icon} {action}[/{color}] — [bold]{len(targets)}[/bold] email(s) :\n" +
+        "\n".join(f"  • {m['subject'][:65]}" for m in targets[:8]) +
         (f"\n  … et {len(targets)-8} autres" if len(targets) > 8 else ""),
-        title="⚡ Confirmation", border_style="yellow"
+        title="⚡ Confirmation", border_style=color
     ))
 
     if not Confirm.ask("[bold red]Confirmer ?[/bold red]", default=False):
         console.print("[dim]→ Annulé.[/dim]")
         return
 
-    ids = [m["id"] for m in targets]
-    for start in range(0, len(ids), 1000):
-        batch = ids[start:start+1000]
-        if action == "DELETE":
-            service.users().messages().batchDelete(userId="me", body={"ids": batch}).execute()
-        else:
-            service.users().messages().batchModify(
-                userId="me", body={"ids": batch, "removeLabelIds": ["INBOX"]}).execute()
+    ids         = [m["id"] for m in targets]
+    ok_count    = 0
+    error_count = 0
 
-    console.print(f"[bold green]✅ {len(ids)} email(s) {verb}.[/bold green]")
+    if action == "TRASH":
+        # ── Méthode 1 : batchModify → ajouter label TRASH + retirer INBOX ──
+        # Fonctionne en mode TEST et PRODUCTION
+        for start in range(0, len(ids), 1000):
+            batch = ids[start:start+1000]
+            try:
+                service.users().messages().batchModify(
+                    userId="me",
+                    body={
+                        "ids"           : batch,
+                        "addLabelIds"   : ["TRASH"],
+                        "removeLabelIds": ["INBOX", "UNREAD"],
+                    }
+                ).execute()
+                ok_count += len(batch)
+            except Exception as e:
+                console.print(f"[red]Erreur batch : {e}[/red]")
+                error_count += len(batch)
+
+        # ── Vérification sur 1 email sample ─────────────────────────────────
+        if ids and ok_count > 0:
+            verified = _verify_action(service, ids[0], "TRASH")
+            if verified:
+                console.print(f"[bold green]✅ {ok_count} email(s) mis à la corbeille.[/bold green]")
+            else:
+                console.print(
+                    f"[yellow]⚠️  API a répondu OK mais la corbeille n'a pas changé.\n"
+                    f"   Cause probable : scope Gmail insuffisant ou app en mode TEST.\n"
+                    f"   → Voir section DIAGNOSTIC ci-dessous.[/yellow]"
+                )
+                _print_scope_diagnostic()
+
+    elif action == "DELETE":
+        # ── Méthode 2 : batchDelete → suppression définitive ────────────────
+        # Nécessite scope https://mail.google.com/
+        for start in range(0, len(ids), 1000):
+            batch = ids[start:start+1000]
+            try:
+                service.users().messages().batchDelete(
+                    userId="me", body={"ids": batch}
+                ).execute()
+                ok_count += len(batch)
+            except Exception as e:
+                console.print(f"[red]Erreur batchDelete : {e}[/red]")
+                # Fallback automatique vers TRASH
+                console.print("[yellow]→ Fallback vers mise à la corbeille...[/yellow]")
+                try:
+                    service.users().messages().batchModify(
+                        userId="me",
+                        body={"ids": batch, "addLabelIds": ["TRASH"],
+                              "removeLabelIds": ["INBOX", "UNREAD"]}
+                    ).execute()
+                    console.print(f"[green]  ✅ {len(batch)} mis à la corbeille (fallback).[/green]")
+                    ok_count += len(batch)
+                except Exception as e2:
+                    console.print(f"[red]  ❌ Fallback échoué : {e2}[/red]")
+                    error_count += len(batch)
+        if ok_count > 0:
+            console.print(f"[bold green]✅ {ok_count} email(s) supprimés définitivement.[/bold green]")
+
+    elif action == "ARCHIVE":
+        # ── Méthode 3 : retrait label INBOX ──────────────────────────────────
+        for start in range(0, len(ids), 1000):
+            batch = ids[start:start+1000]
+            try:
+                service.users().messages().batchModify(
+                    userId="me",
+                    body={"ids": batch, "removeLabelIds": ["INBOX"]}
+                ).execute()
+                ok_count += len(batch)
+            except Exception as e:
+                console.print(f"[red]Erreur archivage : {e}[/red]")
+                error_count += len(batch)
+
+        if ids and ok_count > 0:
+            verified = _verify_action(service, ids[0], "ARCHIVE")
+            status = "[bold green]✅" if verified else "[yellow]⚠️ "
+            console.print(f"{status} {ok_count} email(s) archivés.[/bold green]" if verified
+                          else f"{status} {ok_count} archivés (non vérifié — vérifier dans Gmail).[/yellow]")
+
+    if error_count:
+        console.print(f"[red]❌ {error_count} email(s) en erreur.[/red]")
+
+
+def _print_scope_diagnostic():
+    """Affiche un guide de diagnostic quand les actions ne fonctionnent pas."""
+    console.print(Panel(
+        "[bold yellow]🔧 DIAGNOSTIC — Pourquoi les suppressions ne fonctionnent pas ?[/bold yellow]\n\n"
+        "[bold]Cause 1 — Scope OAuth insuffisant[/bold]\n"
+        "  → Supprimer [cyan]token.pickle[/cyan] et relancer le script\n"
+        "  → Le script demandera à nouveau l'autorisation avec les bons scopes\n\n"
+        "[bold]Cause 2 — App Google Cloud en mode TEST[/bold]\n"
+        "  → console.cloud.google.com\n"
+        "  → APIs & Services → Écran de consentement OAuth\n"
+        "  → Changer le statut de [red]TEST[/red] → [green]PRODUCTION[/green]\n"
+        "  → (Pas besoin de validation Google pour usage personnel)\n\n"
+        "[bold]Cause 3 — Vérification manuelle[/bold]\n"
+        "  → Ouvrir Gmail → Corbeille → vérifier si les emails y sont\n"
+        "  → Si oui : tout fonctionne, ils seront supprimés dans 30 jours\n"
+        "  → Ou vider la corbeille manuellement",
+        border_style="yellow"
+    ))
 
 
 def _parse_selection(raw: str, max_idx: int, current: set) -> set:
@@ -691,7 +821,14 @@ def interactive_payments(service, payments: list):
             console.print(f"[green]→ {len(selected)} email(s) correspondant à « {kw} » sélectionnés.[/green]")
             Prompt.ask("[dim]Entrée pour continuer[/dim]")
         elif raw == "del":
-            _execute_mail_action(service, payments, selected, "DELETE")
+            # Proposer TRASH (sûr) ou DELETE (définitif)
+            mode = Prompt.ask(
+                "  [yellow]Mode suppression[/yellow]",
+                choices=["trash", "delete"],
+                default="trash"
+            )
+            _execute_mail_action(service, payments, selected,
+                                 "TRASH" if mode == "trash" else "DELETE")
             selected = set()
             Prompt.ask("[dim]Entrée pour continuer[/dim]")
         elif raw == "arc":
@@ -834,7 +971,13 @@ def interactive_trading(service, trades: list):
             console.print(f"[green]→ {len(selected)} email(s) correspondant à « {kw} » sélectionnés.[/green]")
             Prompt.ask("[dim]Entrée pour continuer[/dim]")
         elif raw == "del":
-            _execute_mail_action(service, trades, selected, "DELETE")
+            mode = Prompt.ask(
+                "  [yellow]Mode suppression[/yellow]",
+                choices=["trash", "delete"],
+                default="trash"
+            )
+            _execute_mail_action(service, trades, selected,
+                                 "TRASH" if mode == "trash" else "DELETE")
             selected = set()
             Prompt.ask("[dim]Entrée pour continuer[/dim]")
         elif raw == "arc":
@@ -1082,7 +1225,7 @@ def _render_cleanup_table(suggestions: list, selected: set):
     console.print(t)
     console.print(
         f"  [bold]Sélectionnés :[/bold] [cyan]{len(selected)}/{len(suggestions)}[/cyan] actions  |  "
-        f"[bold]Emails concernés :[/bold] [bold yellow]{total_sel}[/bold yellow]"
+        f"[bold]Emails concernés :[/bold] [bold yellow]{total_sel}[/bold yellow]\n"
     )
 
 
@@ -1187,8 +1330,16 @@ def interactive_cleanup_editor(service, suggestions: list):
                 for start in range(0, len(ids), 1000):
                     batch = ids[start:start+1000]
                     if s["type"] == "DELETE":
-                        service.users().messages().batchDelete(
-                            userId="me", body={"ids": batch}).execute()
+                        try:
+                            service.users().messages().batchDelete(
+                                userId="me", body={"ids": batch}).execute()
+                        except Exception:
+                            service.users().messages().batchModify(
+                                userId="me",
+                                body={"ids": batch,
+                                      "addLabelIds"   : ["TRASH"],
+                                      "removeLabelIds": ["INBOX","UNREAD"]}
+                            ).execute()
                     elif s["type"] == "ARCHIVE":
                         service.users().messages().batchModify(
                             userId="me",
@@ -1277,7 +1428,7 @@ def display_cleanup(suggestions):
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║        Gmail Smart Manager — Premier Tech Edition        ║
-║              Pascal Bey  ·  v2.3  ·  2026               ║
+║              Pascal Bey  ·  v2.4  ·  2026               ║
 ╠══════════════════════════════════════════════════════════╣
 ║  🔴 Urgents   💳 Paiements   📈 Trading                  ║
 ║  📦 Colis     📊 Expéditeurs  🧹 Nettoyage               ║
