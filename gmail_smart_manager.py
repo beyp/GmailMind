@@ -98,7 +98,7 @@ SENDER_CATEGORIES = {
     "mondial relay"   : "DELIVERY",
     "gls"             : "DELIVERY",
 
-    # 🗑️  PROMO / NEWSLETTER → exclus des urgents
+    # 📢 PROMO / NEWSLETTER → exclus des urgents
     "leroy merlin"    : "PROMO",
     "ebuyclub"        : "PROMO",
     "taaft"           : "PROMO",
@@ -110,7 +110,7 @@ SENDER_CATEGORIES = {
     "free"            : "PROMO",
     "fnac"            : "PROMO",
     "cdiscount"       : "PROMO",
-    "amazon"          : "PROMO",         # emails promos (pas livraisons)
+    "amazon"          : "PROMO",
     "aliexpress"      : "PROMO",
     "groupon"         : "PROMO",
     "vente-privee"    : "PROMO",
@@ -118,7 +118,56 @@ SENDER_CATEGORIES = {
     "boulanger"       : "PROMO",
     "darty"           : "PROMO",
     "decathlon"       : "PROMO",
+    # Voyages & loisirs
+    "voyage prive"    : "PROMO",
+    "voyage privé"    : "PROMO",
+    "voyageprive"     : "PROMO",
+    "club des invest" : "PROMO",
+    "indépendant"     : "PROMO",
+    "brilland"        : "PROMO",
+    "felix baron"     : "PROMO",
+    # Médias & contenu
+    "france.tv"       : "PROMO",
+    "france tv"       : "PROMO",
+    "substack"        : "NOTIF",
+    "medium"          : "PROMO",
+    "newsletter"      : "PROMO",
+
+    # 🔔 NOTIF — Notifications automatiques sans action urgente requise
+    # (compte créé, bienvenue, confirmation, cashback info...)
+    "mailersend"      : "NOTIF",
+    "sendgrid"        : "NOTIF",
+    "mailchimp"       : "NOTIF",
+    "ecoflow"         : "NOTIF",
+    "banque postale"  : "NOTIF",    # cashback info (≠ paiement réel)
+    "assurance malad" : "NOTIF",    # Ameli notifications
+    "ameli"           : "NOTIF",
+    "cpam"            : "NOTIF",
+    "sg"              : "NOTIF",    # Société Générale notifs (nouveau bénéficiaire etc.)
+    "societegenerale" : "NOTIF",
+    "no-reply"        : "NOTIF",
+    "noreply"         : "NOTIF",
+    "do-not-reply"    : "NOTIF",
+    "donotreply"      : "NOTIF",
+    "notifications"   : "NOTIF",
+    "notification"    : "NOTIF",
 }
+
+# ── Mots-clés → forcer catégorie NOTIF ──────────────────────────────────────
+NOTIF_KEYWORDS = [
+    # Onboarding / bienvenue
+    "bienvenue", "welcome", "compte créé", "account created",
+    "mot de passe initial", "initial password",
+    "confirmez votre email", "confirm your email",
+    "verify your email", "vérifiez votre adresse",
+    # Notifications info
+    "nouveau bénéficiaire", "new beneficiary",
+    "connexion depuis", "new login", "new sign-in",
+    "cashback", "remise en argent",
+    # Marketing déguisé en info
+    "découvrez", "profitez", "offre du moment",
+    "dès maintenant", "disponible maintenant",
+]
 
 # Mots-clés trading critiques (margin call, liquidation…)
 TRADING_CRITICAL_KEYWORDS = [
@@ -138,16 +187,28 @@ PAYMENT_KEYWORDS = [
     "refund", "solde", "balance", "account statement", "relevé",
 ]
 
-# Mots-clés urgence RÉELLE (on exclut les mots marketing)
+# Mots-clés urgence RÉELLE
+# ⚠️  Règle : chaque mot-clé doit SEUL impliquer une action humaine requise
+# ❌  Retirés car trop génériques (déclenchaient faux positifs) :
+#     "votre compte", "your account", "verify", "vérifiez",
+#     "confirmation requise" → présents dans tout email transactionnel/promo
 URGENT_KEYWORDS = [
-    "urgent", "urgence", "critique", "critical",
-    "action requise", "action required", "réponse requise", "response needed",
-    "délai", "deadline", "échéance", "overdue", "en retard",
-    "bloqué", "blocked", "en attente de", "pending",
-    "dès que possible", "asap", "immédiatement",          # sans "immédiat" seul = trop générique
-    "please respond", "awaiting your", "time sensitive",
-    "votre compte", "your account", "vérification requise",
-    "confirmation requise", "verify", "vérifiez",
+    # Urgence explicite
+    "urgent", "urgence",
+    "action requise", "action required",
+    "réponse requise", "response needed", "response required",
+    "please respond", "awaiting your reply", "awaiting your response",
+    # Délais réels
+    "deadline", "overdue", "en retard", "past due",
+    "dès que possible", "asap",
+    "time sensitive", "time-sensitive",
+    # Blocage
+    "bloqué", "blocked", "suspendu", "suspended",
+    "accès refusé", "access denied", "account suspended",
+    "compte bloqué", "account locked",
+    # Financier critique (hors module PAYMENT/TRADING)
+    "impayé", "unpaid", "recouvrement", "huissier",
+    "mise en demeure", "formal notice",
 ]
 
 # Indicateurs newsletters/promos → si présents, score urgence réduit
@@ -276,7 +337,15 @@ def parse_message(msg):
 def categorize_message(msg) -> str:
     """
     Retourne la catégorie principale d'un message :
-    TRADING | PAYMENT | DELIVERY | URGENT | PROMO | OTHER
+    TRADING | PAYMENT | DELIVERY | PROMO | NOTIF | OTHER
+
+    Ordre de priorité (du plus fort au plus faible) :
+      1. TRADING   — plateformes connues ou mots-clés critiques
+      2. PAYMENT   — services financiers connus ou mots-clés paiement
+      3. DELIVERY  — transporteurs connus ou mots-clés livraison
+      4. PROMO     — expéditeurs marketing connus
+      5. NOTIF     — notifications auto, onboarding, confirmations
+      6. OTHER     — tout le reste (candidats urgents réels)
     """
     combined = (
         msg["sender_name"] + " " +
@@ -285,18 +354,27 @@ def categorize_message(msg) -> str:
         msg["snippet"]
     ).lower()
 
-    # Priorité : d'abord vérifier via le mapping d'expéditeurs connus
+    # 1. Mapping expéditeurs connus (priorité absolue)
     for key, cat in SENDER_CATEGORIES.items():
         if key in combined:
             return cat
 
-    # Ensuite par mots-clés dans le contenu
+    # 2. Mots-clés de contenu — ordre de priorité strict
     if any(kw in combined for kw in TRADING_CRITICAL_KEYWORDS):
         return "TRADING"
     if any(kw in combined for kw in PAYMENT_KEYWORDS):
         return "PAYMENT"
     if any(kw in combined for kw in DELIVERY_KEYWORDS):
         return "DELIVERY"
+
+    # 3. Notifications auto (onboarding, confirmations génériques)
+    if any(kw in combined for kw in NOTIF_KEYWORDS):
+        return "NOTIF"
+
+    # 4. Indicateurs newsletter/promo dans le contenu
+    promo_hits = sum(1 for p in PROMO_INDICATORS if p in combined)
+    if promo_hits >= 2:
+        return "PROMO"
 
     return "OTHER"
 
@@ -358,8 +436,8 @@ def get_urgent_emails(service, parsed):
     with Progress(SpinnerColumn(), TextColumn("🔍 Analyse urgences..."), console=console) as p:
         task = p.add_task("", total=len(parsed))
         for msg in parsed:
-            if msg.get("category") in ("PAYMENT", "TRADING", "DELIVERY", "PROMO"):
-                p.advance(task); continue          # traités dans leurs modules
+            if msg.get("category") in ("PAYMENT", "TRADING", "DELIVERY", "PROMO", "NOTIF"):
+                p.advance(task); continue  # traités dans leurs modules ou ignorés; continue  # traités dans leurs modules ou ignorés
             body = ""
             if msg["is_unread"] and (datetime.datetime.now() - msg["date"]).days <= 14:
                 d = get_message_detail(service, msg["id"])
@@ -861,7 +939,7 @@ def analyze_senders(parsed):
 
 CATEGORY_ICONS = {
     "TRADING" : "📈", "PAYMENT": "💳", "DELIVERY": "📦",
-    "PROMO"   : "📢", "URGENT" : "🔴", "OTHER"   : "📧",
+    "PROMO"   : "📢", "NOTIF"  : "🔔", "OTHER"   : "📧",
 }
 
 def display_senders(sender_stats):
@@ -882,7 +960,7 @@ def display_senders(sender_stats):
     cat_colors = {
         "TRADING" : "bold yellow", "PAYMENT": "bold magenta",
         "DELIVERY": "bold blue",   "PROMO"  : "dim",
-        "URGENT"  : "bold red",    "OTHER"  : "white",
+        "NOTIF"   : "dim cyan",    "OTHER"  : "white",
     }
     for i, s in enumerate(sorted_s[:30], 1):
         icon  = CATEGORY_ICONS.get(s["category"], "📧")
@@ -1199,7 +1277,7 @@ def display_cleanup(suggestions):
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║        Gmail Smart Manager — Premier Tech Edition        ║
-║              Pascal Bey  ·  v2.2  ·  2026               ║
+║              Pascal Bey  ·  v2.3  ·  2026               ║
 ╠══════════════════════════════════════════════════════════╣
 ║  🔴 Urgents   💳 Paiements   📈 Trading                  ║
 ║  📦 Colis     📊 Expéditeurs  🧹 Nettoyage               ║
@@ -1245,12 +1323,16 @@ def main():
     # Résumé rapide au démarrage
     from collections import Counter
     cats = Counter(m.get("category","OTHER") for m in parsed)
+    nb_urgent_other = sum(1 for m in parsed
+                          if m.get("category") == "OTHER" and m.get("is_unread"))
     console.print(Panel(
-        f"  📈 Trading   : [bold yellow]{cats.get('TRADING',0)}[/bold yellow] emails\n"
-        f"  💳 Paiements : [bold magenta]{cats.get('PAYMENT',0)}[/bold magenta] emails\n"
-        f"  📦 Livraisons: [bold blue]{cats.get('DELIVERY',0)}[/bold blue] emails\n"
-        f"  📢 Promos    : [bold dim]{cats.get('PROMO',0)}[/bold dim] emails\n"
-        f"  📧 Autres    : {cats.get('OTHER',0)} emails\n"
+        f"  📈 Trading    : [bold yellow]{cats.get('TRADING',0)}[/bold yellow] emails\n"
+        f"  💳 Paiements  : [bold magenta]{cats.get('PAYMENT',0)}[/bold magenta] emails\n"
+        f"  📦 Livraisons : [bold blue]{cats.get('DELIVERY',0)}[/bold blue] emails\n"
+        f"  📢 Promos     : [dim]{cats.get('PROMO',0)}[/dim] emails\n"
+        f"  🔔 Notifs auto: [dim cyan]{cats.get('NOTIF',0)}[/dim cyan] emails\n"
+        f"  📧 Autres     : {cats.get('OTHER',0)} emails "
+        f"([bold red]{nb_urgent_other} non lus[/bold red])\n"
         f"  👥 Expéditeurs uniques : {len(sender_stats)}",
         title="📊 Vue d'ensemble", border_style="cyan"
     ))
