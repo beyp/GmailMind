@@ -1482,10 +1482,19 @@ def display_trading(trades):
 # ─────────────────────────────────────────────────────────
 # 📦 MODULE 4 : LIVRAISONS
 # ─────────────────────────────────────────────────────────
-def get_delivery_emails(service, parsed):
+def get_delivery_emails(service, parsed: list) -> list:
+    """
+    Récupère et enrichit les emails de livraison.
+    Chaque email est enrichi avec :
+      - delivery_status : ✅ Livré / 🚚 En livraison / 📦 Expédié / 🛒 Confirmé
+      - tracking        : liste des numéros de suivi détectés
+      - carrier         : transporteur principal détecté
+    """
     deliveries = []
     candidates = [m for m in parsed if m.get("category") == "DELIVERY"]
-    with Progress(SpinnerColumn(), TextColumn("📦 Analyse livraisons..."), console=console) as p:
+
+    with Progress(SpinnerColumn(), TextColumn("📦 Analyse livraisons..."),
+                  console=console) as p:
         task = p.add_task("", total=len(candidates))
         for m in candidates:
             text    = (m["subject"] + " " + m["snippet"]).lower()
@@ -1493,54 +1502,366 @@ def get_delivery_emails(service, parsed):
             body    = decode_body(detail.get("payload", {})) if detail else ""
             all_txt = text + " " + body.lower()
 
-            status = "📬 Info"
-            if any(w in all_txt for w in ["delivered", "livré", "remis"]):
-                status = "✅ Livré"
-            elif any(w in all_txt for w in ["out for delivery", "en cours de livraison"]):
-                status = "🚚 En livraison"
-            elif any(w in all_txt for w in ["shipped", "expédié", "en transit"]):
-                status = "📦 Expédié"
-            elif any(w in all_txt for w in ["order", "commande", "confirmé"]):
-                status = "🛒 Confirmé"
+            # ── Statut ────────────────────────────────────────────
+            if any(w in all_txt for w in [
+                "delivered", "livré", "remis", "déposé",
+                "votre colis a été livré", "package delivered"
+            ]):
+                status     = "✅ Livré"
+                status_prio = 1
+            elif any(w in all_txt for w in [
+                "out for delivery", "en cours de livraison",
+                "en route", "dans votre quartier"
+            ]):
+                status     = "🚚 En livraison"
+                status_prio = 2
+            elif any(w in all_txt for w in [
+                "shipped", "expédié", "en transit", "pris en charge"
+            ]):
+                status     = "📦 Expédié"
+                status_prio = 3
+            elif any(w in all_txt for w in [
+                "order confirmed", "commande confirmée", "commande reçue"
+            ]):
+                status     = "🛒 Confirmé"
+                status_prio = 4
+            else:
+                status     = "📬 Info"
+                status_prio = 5
 
-            # Tracking numbers
+            # ── Numéros de tracking ───────────────────────────────
             tracking = []
-            for carrier, pattern in TRACKING_PATTERNS.items():
-                for match in re.findall(pattern, all_txt, re.IGNORECASE):
-                    if len(str(match)) > 8:
-                        tracking.append(f"{carrier}: {match}")
+            carrier  = ""
+            for car, pattern in TRACKING_PATTERNS.items():
+                matches = re.findall(pattern, all_txt, re.IGNORECASE)
+                for match in matches:
+                    num = str(match).strip()
+                    if len(num) > 7:
+                        tracking.append({"carrier": car, "number": num})
+                        if not carrier:
+                            carrier = car
 
-            deliveries.append({**m, "delivery_status": status, "tracking": tracking})
+            # ── Transporteur depuis le nom expéditeur ─────────────
+            if not carrier:
+                sender_low = (m["sender_name"] + " " + m["sender_email"]).lower()
+                for car_name in ["ups", "fedex", "dhl", "chronopost",
+                                 "colissimo", "mondial relay", "gls",
+                                 "intelcom", "colis prive", "purolator"]:
+                    if car_name in sender_low:
+                        carrier = car_name.title()
+                        break
+
+            deliveries.append({
+                **m,
+                "delivery_status" : status,
+                "status_prio"     : status_prio,
+                "tracking"        : tracking,
+                "carrier"         : carrier,
+                "tracking_str"    : tracking[0]["number"] if tracking else "",
+            })
             p.advance(task)
-    return sorted(deliveries, key=lambda x: x["date"], reverse=True)
+
+    # Tri par défaut : Tracking → Date → Expéditeur → Statut
+    return _sort_deliveries(deliveries, sort_by="tracking")
 
 
-def display_deliveries(deliveries):
-    if not deliveries:
-        console.print(Panel("[green]📭 Aucune livraison détectée.[/green]", border_style="green"))
-        return
-    t = Table(title=f"📦 Livraisons ({len(deliveries)})", box=box.ROUNDED, show_lines=True)
-    t.add_column("Statut",      width=18)
-    t.add_column("Date",        width=12, style="cyan")
-    t.add_column("Expéditeur",  width=20, style="magenta")
-    t.add_column("Sujet",       width=40, style="white")
-    t.add_column("Tracking",    width=28, style="yellow")
-    for m in deliveries[:15]:
-        border = ("green" if "✅" in m["delivery_status"] else
-                  "yellow" if "🚚" in m["delivery_status"] else "blue")
-        t.add_row(
-            f"[{border}]{m['delivery_status']}[/{border}]",
-            m["date"].strftime("%Y-%m-%d"),
-            (m["sender_name"] or m["sender_email"])[:19],
-            m["subject"][:39],
-            "\n".join(m["tracking"][:2]) if m["tracking"] else "—",
+def _sort_deliveries(deliveries: list, sort_by: str = "tracking") -> list:
+    """Trie les livraisons selon le critère choisi."""
+    if sort_by == "tracking":
+        # Grouper : avec tracking d'abord, puis sans
+        with_t    = sorted(
+            [d for d in deliveries if d["tracking_str"]],
+            key=lambda x: (x["tracking_str"], x["date"]),
+            reverse=False
         )
+        without_t = sorted(
+            [d for d in deliveries if not d["tracking_str"]],
+            key=lambda x: x["date"], reverse=True
+        )
+        return with_t + without_t
+    elif sort_by == "date":
+        return sorted(deliveries, key=lambda x: x["date"], reverse=True)
+    elif sort_by == "expediteur":
+        return sorted(deliveries,
+                      key=lambda x: (x["sender_name"] or x["sender_email"]).lower())
+    elif sort_by == "statut":
+        return sorted(deliveries, key=lambda x: x["status_prio"])
+    return deliveries
+
+
+def _render_deliveries_table(deliveries: list, selected: set,
+                              sort_by: str, page: int, page_size: int = 20):
+    """Affiche le tableau des livraisons avec cases à cocher."""
+    start_i    = page * page_size
+    end_i      = min(start_i + page_size, len(deliveries))
+    page_items = deliveries[start_i:end_i]
+    nb_pages   = max(1, -(-len(deliveries) // page_size))
+
+    SORT_ICONS = {
+        "tracking": "🔢 Tracking",
+        "date"    : "📅 Date",
+        "expediteur": "👤 Expéditeur",
+        "statut"  : "📊 Statut",
+    }
+    sort_label = SORT_ICONS.get(sort_by, sort_by)
+
+    t = Table(
+        title=(
+            f"📦 Livraisons [{start_i+1}-{end_i}] / {len(deliveries)}  "
+            f"— Tri: {sort_label}  "
+            f"(page {page+1}/{nb_pages})  [cyan]?[/cyan]=aide"
+        ),
+        box=box.ROUNDED, show_lines=True
+    )
+    t.add_column("#",           width=4,  justify="right", style="bold dim")
+    t.add_column("✔",           width=3,  justify="center")
+    t.add_column("Statut",      width=17)
+    t.add_column("Date",        width=11, style="cyan")
+    t.add_column("Expéditeur",  width=18, style="magenta", no_wrap=True)
+    t.add_column("Sujet",       width=32, style="white",   no_wrap=True)
+    t.add_column("Transporteur",width=12, style="blue",    no_wrap=True)
+    t.add_column("Tracking",    width=22, style="yellow")
+
+    for abs_i, m in enumerate(page_items, start=start_i + 1):
+        check    = "[bold green]■[/bold green]" if abs_i in selected else "[dim]□[/dim]"
+        st       = m["delivery_status"]
+        color    = ("green"  if "✅" in st else
+                    "yellow" if "🚚" in st else
+                    "blue"   if "📦" in st else
+                    "cyan"   if "🛒" in st else "dim")
+        if m["tracking"]:
+            t_list = [f"{t['carrier'][:3]}: {t['number'][:14]}"
+                      for t in m["tracking"][:2]]
+            tracking_str = "\n".join(t_list)
+        else:
+            tracking_str = "[dim]—[/dim]"
+
+        t.add_row(
+            str(abs_i), check,
+            f"[{color}]{st}[/{color}]",
+            m["date"].strftime("%Y-%m-%d"),
+            (m["sender_name"] or m["sender_email"])[:17],
+            m["subject"][:31],
+            (m["carrier"] or "—")[:11],
+            tracking_str,
+        )
+
     console.print(t)
 
+    # ── Compteurs par statut ──────────────────────────────────────
+    livres    = sum(1 for d in deliveries if "✅" in d["delivery_status"])
+    en_route  = sum(1 for d in deliveries if "🚚" in d["delivery_status"])
+    expedies  = sum(1 for d in deliveries if "📦" in d["delivery_status"])
+    confirmes = sum(1 for d in deliveries if "🛒" in d["delivery_status"])
+    nb_sel    = len(selected)
 
-# ─────────────────────────────────────────────────────────
-# 📊 MODULE 5 : ANALYSE DES EXPÉDITEURS
-# ─────────────────────────────────────────────────────────
+    console.print(
+        f"  [green]✅ Livrés: {livres}[/green]   "
+        f"[yellow]🚚 En route: {en_route}[/yellow]   "
+        f"[blue]📦 Expédiés: {expedies}[/blue]   "
+        f"[cyan]🛒 Confirmés: {confirmes}[/cyan]   "
+        f"[dim]|[/dim]   [bold]Sélectionnés: [cyan]{nb_sel}[/cyan][/bold]\n"
+    )
+
+
+def _print_delivery_help():
+    h = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+    h.add_column("Cmd",  style="bold cyan", width=22)
+    h.add_column("Effet",style="white",     width=55)
+    rows = [
+        ("1,3,5  ou  2-8",     "Toggle sélection individuelle ou plage"),
+        ("a  /  n",            "Tout sélectionner / désélectionner"),
+        ("s livré",            "Sélectionner tous les colis livrés"),
+        ("s expédié",          "Sélectionner tous les expédiés"),
+        ("tri tracking",       "Trier par numéro de tracking (défaut)"),
+        ("tri date",           "Trier par date"),
+        ("tri expediteur",     "Trier par expéditeur"),
+        ("tri statut",         "Trier par statut"),
+        ("auto",               "⚡ Sélectionner + archiver les ✅ Livrés automatiquement"),
+        ("arc",                "📁 Archiver les emails sélectionnés"),
+        ("del",                "🗑️  Mettre à la corbeille"),
+        ("n+  /  n-",          "Page suivante / précédente"),
+        ("q",                  "Retour au menu principal"),
+        ("?",                  "Afficher cette aide"),
+    ]
+    for cmd, desc in rows:
+        h.add_row(cmd, desc)
+    console.print(Panel(h, title="💡 Aide — Module Livraisons", border_style="cyan"))
+
+
+def interactive_deliveries(service, deliveries: list):
+    """Module livraisons interactif avec tri, sélection et nettoyage auto."""
+    if not deliveries:
+        console.print(Panel(
+            "[green]📭 Aucune livraison détectée.[/green]",
+            border_style="green"
+        ))
+        return
+
+    selected  = set()
+    page      = 0
+    PAGE_SIZE = 20
+    sort_by   = "tracking"    # tri par défaut
+
+    # ── Suggestion automatique dès l'ouverture ───────────────────
+    livres = [m for m in deliveries if "✅" in m["delivery_status"]]
+    if livres:
+        console.print(Panel(
+            f"[bold green]💡 {len(livres)} colis livré(s) détecté(s)[/bold green]\n"
+            f"Tapez [bold cyan]auto[/bold cyan] pour les archiver automatiquement,\n"
+            f"ou [bold cyan]s livré[/bold cyan] pour les sélectionner manuellement.",
+            border_style="green", padding=(0, 2)
+        ))
+
+    while True:
+        console.clear()
+        console.rule("[bold blue]📦 Suivi des Livraisons[/bold blue]")
+        _render_deliveries_table(deliveries, selected, sort_by, page, PAGE_SIZE)
+
+        console.print(
+            "  [dim]Commandes :[/dim] "
+            "[cyan]1,3[/cyan]=toggle  [cyan]2-5[/cyan]=plage  "
+            "[cyan]a[/cyan]/[cyan]n[/cyan]=tout/rien  "
+            "[cyan]s livré[/cyan]=filtre  "
+            "[cyan]tri date/statut/expediteur/tracking[/cyan]=tri  "
+            "[cyan]auto[/cyan]=archiver livrés  "
+            "[cyan]arc[/cyan]/[cyan]del[/cyan]=action  "
+            "[cyan]n+[/cyan]/[cyan]n-[/cyan]=pages  "
+            "[cyan]q[/cyan]=quitter  [cyan]?[/cyan]=aide"
+        )
+        raw = Prompt.ask("\n[bold yellow]>[/bold yellow]").strip()
+        rl  = raw.lower()
+
+        # ── Aide ────────────────────────────────────────────────
+        if rl == "?":
+            _print_delivery_help()
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Quitter ─────────────────────────────────────────────
+        elif rl in ("q", ""):
+            break
+
+        # ── Pagination ──────────────────────────────────────────
+        elif rl in ("n+", ">"):
+            max_p = max(0, -(-len(deliveries) // PAGE_SIZE) - 1)
+            page  = min(page + 1, max_p)
+        elif rl in ("n-", "<"):
+            page  = max(0, page - 1)
+
+        # ── Tout / rien ─────────────────────────────────────────
+        elif rl == "a":
+            selected = set(range(1, len(deliveries) + 1))
+        elif rl == "n":
+            selected = set()
+
+        # ── Tri ─────────────────────────────────────────────────
+        elif rl.startswith("tri "):
+            sort_key = rl.split("tri ", 1)[1].strip()
+            valid    = {"tracking", "date", "expediteur", "statut"}
+            if sort_key in valid:
+                sort_by    = sort_key
+                deliveries = _sort_deliveries(deliveries, sort_by)
+                selected   = set()
+                page       = 0
+                console.print(f"[green]→ Tri par {sort_key} appliqué.[/green]")
+            else:
+                console.print(f"[red]Tri invalide. Valides : {', '.join(valid)}[/red]")
+                Prompt.ask("[dim]Entrée[/dim]")
+
+        # ── Filtre s STATUT ─────────────────────────────────────
+        elif rl.startswith("s "):
+            kw = rl[2:].strip()
+            for i, m in enumerate(deliveries, 1):
+                if (kw in m["delivery_status"].lower()
+                        or kw in m["subject"].lower()
+                        or kw in (m["sender_name"] or "").lower()):
+                    selected.add(i)
+            console.print(
+                f"[green]→ {len(selected)} email(s) "
+                f"correspondant à «{kw}» sélectionnés.[/green]"
+            )
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── AUTO : archiver tous les livrés ─────────────────────
+        elif rl == "auto":
+            livres_idx = {i for i, m in enumerate(deliveries, 1)
+                          if "✅" in m["delivery_status"]}
+            if not livres_idx:
+                console.print("[yellow]Aucun colis livré à archiver.[/yellow]")
+                Prompt.ask("[dim]Entrée[/dim]")
+                continue
+
+            console.print(Panel(
+                f"[bold green]📁 Archivage automatique de "
+                f"{len(livres_idx)} colis livré(s)[/bold green]\n" +
+                "\n".join(
+                    f"  ✅ {deliveries[i-1]['subject'][:60]}"
+                    for i in sorted(livres_idx)[:8]
+                ) +
+                (f"\n  … et {len(livres_idx)-8} autres"
+                 if len(livres_idx) > 8 else ""),
+                border_style="green"
+            ))
+
+            if Confirm.ask("[bold]Confirmer l'archivage ?[/bold]", default=True):
+                targets = [deliveries[i-1] for i in sorted(livres_idx)]
+                ids     = [m["id"] for m in targets]
+                for start in range(0, len(ids), 1000):
+                    batch = ids[start:start+1000]
+                    service.users().messages().batchModify(
+                        userId="me",
+                        body={"ids": batch, "removeLabelIds": ["INBOX"]}
+                    ).execute()
+                console.print(
+                    f"[bold green]✅ {len(ids)} email(s) de colis livrés archivés ![/bold green]"
+                )
+                # Retirer les livrés de la liste affichée
+                deliveries = [m for i, m in enumerate(deliveries, 1)
+                              if i not in livres_idx]
+                selected   = set()
+                page       = 0
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Archiver / Supprimer sélection ───────────────────────
+        elif rl in ("arc", "del", "trash"):
+            if not selected:
+                console.print("[yellow]⚠️  Aucun email sélectionné.[/yellow]")
+                Prompt.ask("[dim]Entrée[/dim]")
+                continue
+
+            targets = [deliveries[i-1] for i in sorted(selected)
+                       if 1 <= i <= len(deliveries)]
+            action  = {"arc": "ARCHIVE", "del": "DELETE", "trash": "TRASH"}[rl]
+            _execute_mail_action(service, targets,
+                                 set(range(1, len(targets)+1)), action)
+            selected = set()
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Sélection numérique ──────────────────────────────────
+        else:
+            range_m = re.match(r"^(\d+)-(\d+)$", rl)
+            if range_m:
+                a, b = int(range_m.group(1)), int(range_m.group(2))
+                for idx in range(min(a,b), max(a,b)+1):
+                    if 1 <= idx <= len(deliveries):
+                        if idx in selected: selected.discard(idx)
+                        else:               selected.add(idx)
+            elif re.match(r"^[\d,\s]+$", rl):
+                for token in re.split(r"[,\s]+", rl):
+                    if token.isdigit():
+                        idx = int(token)
+                        if 1 <= idx <= len(deliveries):
+                            if idx in selected: selected.discard(idx)
+                            else:               selected.add(idx)
+            else:
+                console.print("[red]Commande inconnue. [bold]?[/bold] pour l'aide.[/red]")
+
+
+def display_deliveries(deliveries: list):
+    """Alias — redirige vers le module interactif (sans service pour affichage simple)."""
+    interactive_deliveries(None, deliveries)
+
+
 def analyze_senders(parsed):
     stats = defaultdict(lambda: {
         "name": "", "email": "", "domain": "", "category": "OTHER",
@@ -2182,7 +2503,7 @@ def display_cleanup(suggestions):
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║        Gmail Smart Manager — Premier Tech Edition        ║
-║              Pascal Bey  ·  v2.7  ·  2026               ║
+║              Pascal Bey  ·  v2.8  ·  2026               ║
 ╠══════════════════════════════════════════════════════════╣
 ║  🔴 Urgents   💳 Paiements   📈 Trading                  ║
 ║  📦 Colis     📊 Expéditeurs  🧹 Nettoyage               ║
@@ -2280,7 +2601,7 @@ def main():
         elif choice == "3":
             interactive_trading(service, get_trading_emails(parsed))
         elif choice == "4":
-            display_deliveries(get_delivery_emails(service, parsed))
+            interactive_deliveries(service, get_delivery_emails(service, parsed))
         elif choice == "5":
             interactive_senders(service, sender_stats)
         elif choice == "6":
