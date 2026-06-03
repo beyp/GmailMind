@@ -48,126 +48,7 @@ MAX_MESSAGES     = 500
 
 # ── Catégories ────────────────────────────────────────────
 # Expéditeurs / domaines → catégorie forcée
-SENDER_CATEGORIES = {
-    # 💳 PAIEMENTS
-    "paypal"          : "PAYMENT",
-    "klarna"          : "PAYMENT",
-    "cofidis"         : "PAYMENT",
-    "oney"            : "PAYMENT",
-    "alma"            : "PAYMENT",
-    "floa"            : "PAYMENT",
-    "cetelem"         : "PAYMENT",
-    "sofinco"         : "PAYMENT",
-    "stripe"          : "PAYMENT",
-    "lydia"           : "PAYMENT",
-    "sumeria"         : "PAYMENT",
-    "revolut"         : "PAYMENT",
-    "n26"             : "PAYMENT",
-    "fortuneo"        : "PAYMENT",
-    "boursorama"      : "PAYMENT",
-    "laposte"         : "PAYMENT",       # compte La Poste / Banque Postale
 
-    # 📈 TRADING
-    "kraken"          : "TRADING",
-    "tradingview"     : "TRADING",
-    "binance"         : "TRADING",
-    "coinbase"        : "TRADING",
-    "bitget"          : "TRADING",
-    "bybit"           : "TRADING",
-    "kucoin"          : "TRADING",
-    "interactive brokers": "TRADING",
-    "degiro"          : "TRADING",
-    "etoro"           : "TRADING",
-    "trade republic"  : "TRADING",
-    "saxo"            : "TRADING",
-    "ig.com"          : "TRADING",
-    "bourse direct"   : "TRADING",
-    "fortuneo"        : "TRADING",
-
-    # 📦 LIVRAISONS  (déjà géré mais on force la catégorie)
-    "colis prive"     : "DELIVERY",
-    "colisprive"      : "DELIVERY",
-    "ups"             : "DELIVERY",
-    "fedex"           : "DELIVERY",
-    "dhl"             : "DELIVERY",
-    "purolator"       : "DELIVERY",
-    "amazon logistics": "DELIVERY",
-    "intelcom"        : "DELIVERY",
-    "laposte"         : "DELIVERY",      # suivi colis
-    "chronopost"      : "DELIVERY",
-    "mondial relay"   : "DELIVERY",
-    "gls"             : "DELIVERY",
-
-    # 📢 PROMO / NEWSLETTER → exclus des urgents
-    "leroy merlin"    : "PROMO",
-    "ebuyclub"        : "PROMO",
-    "taaft"           : "PROMO",
-    "hello watt"      : "PROMO",
-    "sosh"            : "PROMO",
-    "sfr"             : "PROMO",
-    "bouygues"        : "PROMO",
-    "orange"          : "PROMO",
-    "free"            : "PROMO",
-    "fnac"            : "PROMO",
-    "cdiscount"       : "PROMO",
-    "amazon"          : "PROMO",
-    "aliexpress"      : "PROMO",
-    "groupon"         : "PROMO",
-    "vente-privee"    : "PROMO",
-    "veepee"          : "PROMO",
-    "boulanger"       : "PROMO",
-    "darty"           : "PROMO",
-    "decathlon"       : "PROMO",
-    # Voyages & loisirs
-    "voyage prive"    : "PROMO",
-    "voyage privé"    : "PROMO",
-    "voyageprive"     : "PROMO",
-    "club des invest" : "PROMO",
-    "indépendant"     : "PROMO",
-    "brilland"        : "PROMO",
-    "felix baron"     : "PROMO",
-    # Médias & contenu
-    "france.tv"       : "PROMO",
-    "france tv"       : "PROMO",
-    "substack"        : "NOTIF",
-    "medium"          : "PROMO",
-    "newsletter"      : "PROMO",
-
-    # 🔔 NOTIF — Notifications automatiques sans action urgente requise
-    # (compte créé, bienvenue, confirmation, cashback info...)
-    "mailersend"      : "NOTIF",
-    "sendgrid"        : "NOTIF",
-    "mailchimp"       : "NOTIF",
-    "ecoflow"         : "NOTIF",
-    "banque postale"  : "NOTIF",    # cashback info (≠ paiement réel)
-    "assurance malad" : "NOTIF",    # Ameli notifications
-    "ameli"           : "NOTIF",
-    "cpam"            : "NOTIF",
-    "sg"              : "NOTIF",    # Société Générale notifs (nouveau bénéficiaire etc.)
-    "societegenerale" : "NOTIF",
-    "no-reply"        : "NOTIF",
-    "noreply"         : "NOTIF",
-    "do-not-reply"    : "NOTIF",
-    "donotreply"      : "NOTIF",
-    "notifications"   : "NOTIF",
-    "notification"    : "NOTIF",
-}
-
-# ── Mots-clés → forcer catégorie NOTIF ──────────────────────────────────────
-NOTIF_KEYWORDS = [
-    # Onboarding / bienvenue
-    "bienvenue", "welcome", "compte créé", "account created",
-    "mot de passe initial", "initial password",
-    "confirmez votre email", "confirm your email",
-    "verify your email", "vérifiez votre adresse",
-    # Notifications info
-    "nouveau bénéficiaire", "new beneficiary",
-    "connexion depuis", "new login", "new sign-in",
-    "cashback", "remise en argent",
-    # Marketing déguisé en info
-    "découvrez", "profitez", "offre du moment",
-    "dès maintenant", "disponible maintenant",
-]
 
 # Mots-clés trading critiques (margin call, liquidation…)
 TRADING_CRITICAL_KEYWORDS = [
@@ -219,6 +100,18 @@ PROMO_INDICATORS = [
     "réduction", "discount", "-50%", "-30%", "cashback",
     "découvrir", "voir les offres", "shop now", "achetez",
 ]
+
+# ── Mots-clés → catégorie NOTIF (onboarding, confirmations auto) ─────────────
+NOTIF_KEYWORDS = [
+    "bienvenue", "welcome", "compte créé", "account created",
+    "mot de passe initial", "initial password",
+    "confirmez votre email", "confirm your email",
+    "verify your email", "vérifiez votre adresse",
+    "nouveau bénéficiaire", "new beneficiary",
+    "connexion depuis", "new login", "new sign-in",
+    "code de vérification", "verification code",
+]
+
 
 # Patterns tracking colis
 TRACKING_PATTERNS = {
@@ -334,48 +227,201 @@ def parse_message(msg):
 # ─────────────────────────────────────────────────────────
 # 🏷️  CATÉGORISATION
 # ─────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════
+# 🏷️  CATÉGORISATION À 2 NIVEAUX
+# Niveau 1 : SENDER_DEFAULT  → catégorie par défaut selon expéditeur
+# Niveau 2 : SUBJECT_OVERRIDES → mots-clés sujet qui overrident le défaut
+# ═══════════════════════════════════════════════════════════════════════
+
+SENDER_DEFAULT = {
+    # 📦 TRANSPORTEURS PURS
+    "colis prive"        : "DELIVERY",  "colisprive"       : "DELIVERY",
+    "ups"                : "DELIVERY",  "fedex"            : "DELIVERY",
+    "dhl"                : "DELIVERY",  "purolator"        : "DELIVERY",
+    "intelcom"           : "DELIVERY",  "chronopost"       : "DELIVERY",
+    "mondial relay"      : "DELIVERY",  "gls"              : "DELIVERY",
+    "amazon logistics"   : "DELIVERY",  "nationex"         : "DELIVERY",
+    "dicom"              : "DELIVERY",
+
+    # 📈 TRADING PURS (jamais overridés vers autre chose)
+    "kraken"             : "TRADING",   "tradingview"      : "TRADING",
+    "binance"            : "TRADING",   "coinbase"         : "TRADING",
+    "bitget"             : "TRADING",   "bybit"            : "TRADING",
+    "kucoin"             : "TRADING",   "degiro"           : "TRADING",
+    "etoro"              : "TRADING",   "trade republic"   : "TRADING",
+    "saxo"               : "TRADING",   "ig.com"           : "TRADING",
+    "bourse direct"      : "TRADING",   "interactive broker": "TRADING",
+    # Revolut → TRADING car emails crypto/ordres (pas pure banque)
+    "revolut"            : "TRADING",
+
+    # 💳 PAIEMENT PURS
+    "paypal"             : "PAYMENT",   "klarna"           : "PAYMENT",
+    "cofidis"            : "PAYMENT",   "oney"             : "PAYMENT",
+    "alma"               : "PAYMENT",   "floa"             : "PAYMENT",
+    "cetelem"            : "PAYMENT",   "sofinco"          : "PAYMENT",
+    "stripe"             : "PAYMENT",   "lydia"            : "PAYMENT",
+    "sumeria"            : "PAYMENT",
+
+    # 🏦 BANQUE
+    "boursorama"         : "BANQUE",    "fortuneo"         : "BANQUE",
+    "societegenerale"    : "BANQUE",    "bnp"              : "BANQUE",
+    "credit agricole"    : "BANQUE",    "caisse d'epargne" : "BANQUE",
+    "credit mutuel"      : "BANQUE",    "banque postale"   : "BANQUE",
+    "la banque postale"  : "BANQUE",    "lcl"              : "BANQUE",
+    "hsbc"               : "BANQUE",    "ing"              : "BANQUE",
+    "hello bank"         : "BANQUE",    "n26"              : "BANQUE",
+    # SG → BANQUE (override possible vers PAYMENT si "virement")
+    "sg"                 : "BANQUE",    "societegenerale"  : "BANQUE",
+
+    # 🏥 SANTÉ
+    "ameli"              : "SANTE",     "cpam"             : "SANTE",
+    "assurance maladie"  : "SANTE",     "assurance malad"  : "SANTE",
+    "mgen"               : "SANTE",     "malakoff"         : "SANTE",
+    "alan"               : "SANTE",     "maif"             : "SANTE",
+
+    # 📱 TÉLÉCOM
+    "sfr"                : "TELECOM",   "orange"           : "TELECOM",
+    "bouygues"           : "TELECOM",   "free"             : "TELECOM",
+    "sosh"               : "TELECOM",   "red by sfr"       : "TELECOM",
+    "prixtel"            : "TELECOM",   "coriolis"         : "TELECOM",
+
+    # 🛡️ ASSURANCE
+    "maaf"               : "ASSURANCE", "allianz"          : "ASSURANCE",
+    "matmut"             : "ASSURANCE", "macif"            : "ASSURANCE",
+    "axa"                : "ASSURANCE", "generali"         : "ASSURANCE",
+    "covea"              : "ASSURANCE", "groupama"         : "ASSURANCE",
+
+    # ⚡ ÉNERGIE
+    "edf"                : "ENERGIE",   "engie"            : "ENERGIE",
+    "totalenergies"      : "ENERGIE",   "ekwateur"         : "ENERGIE",
+    "lesfurets"          : "ENERGIE",   "hello watt"       : "ENERGIE",
+
+    # 🚢 Croisières / voyages promos
+    "croisiere"          : "PROMO",
+    "croisières"         : "PROMO",
+    "destockage crois"   : "PROMO",
+    "déstockage crois"   : "PROMO",
+    "so'croisières"      : "PROMO",
+    "so croisières"      : "PROMO",
+    # 📢 PROMO / MULTI-CAT (override par sujet possible)
+    "amazon"             : "PROMO",     "fnac"             : "PROMO",
+    "cdiscount"          : "PROMO",     "aliexpress"       : "PROMO",
+    "ebay"               : "PROMO",     "vente-privee"     : "PROMO",
+    "veepee"             : "PROMO",     "leroy merlin"     : "PROMO",
+    "boulanger"          : "PROMO",     "darty"            : "PROMO",
+    "decathlon"          : "PROMO",     "groupon"          : "PROMO",
+    "ebuyclub"           : "PROMO",     "voyage prive"     : "PROMO",
+    "voyage privé"       : "PROMO",     "voyageprive"      : "PROMO",
+    "france.tv"          : "PROMO",     "substack"         : "PROMO",
+    "medium"             : "PROMO",     "taaft"            : "PROMO",
+    "brilland"           : "PROMO",     "felix baron"      : "PROMO",
+    "club des invest"    : "PROMO",     "prime video"      : "PROMO",
+    "vistaprint"         : "PROMO",
+
+    # 🔔 NOTIF PURS
+    "mailersend"         : "NOTIF",     "sendgrid"         : "NOTIF",
+    "mailchimp"          : "NOTIF",     "ecoflow"          : "NOTIF",
+    "no-reply"           : "NOTIF",     "noreply"          : "NOTIF",
+    "do-not-reply"       : "NOTIF",     "donotreply"       : "NOTIF",
+}
+
+SUBJECT_OVERRIDES = {
+    # Priorité décroissante : DELIVERY > PAYMENT > TRADING > ...
+    "DELIVERY": [
+        "expédié", "shipped", "livraison", "livré", "en transit",
+        "suivi de", "tracking", "colis", "commande expédiée",
+        "order shipped", "out for delivery", "en cours de livraison",
+        "votre commande est en route", "numéro de suivi",
+    ],
+    "PAYMENT": [
+        "facture", "invoice", "échéance", "echeance", "prélèvement",
+        "mensualité", "4x", "3x", "crédit renouvelable",
+        "montant dû", "amount due", "relevé de compte",
+        "votre abonnement", "renouvellement", "renewal",
+        "regroupement de crédit",
+    ],
+    "TRADING": [
+        "ordre d'achat", "ordre de vente", "order executed",
+        "exécuté", "crypto", "btc", "eth", "sol", "trading",
+        "négocier", "portefeuille", "wallet",
+    ],
+    "ENERGIE": [
+        "facture énergie", "consommation électricité", "nouveau calendrier",
+        "votre facture de gaz", "relevé de compteur",
+    ],
+    "SANTE": [
+        "remboursement santé", "soins", "ordonnance", "pharmacie",
+        "relevé de remboursement", "carte vitale",
+    ],
+    "BANQUE": [
+        "relevé de compte", "virement", "découvert",
+        "nouveau bénéficiaire", "extrait de compte",
+    ],
+    "TELECOM": [
+        "votre facture", "facture mensuelle", "consommation",
+        "recharge", "forfait mobile",
+    ],
+    "NOTIF": [
+        "bienvenue", "welcome", "compte créé", "confirmez",
+        "confirm your email", "verify your email",
+        "connexion depuis", "code de vérification",
+    ],
+    "PROMO": [
+        "offre", "promo", "réduction", "solde", "bon plan",
+        "-50%", "-30%", "-20%", "cashback", "découvrez nos",
+        "vos offres", "coup de coeur", "besoin d'un break",
+        "à partir de", "dès maintenant",
+    ],
+}
+
+# Catégories dont le défaut NE PEUT PAS être overridé vers autre chose
+LOCKED_CATEGORIES = {"TRADING", "DELIVERY"}
+
+# ── Alias pour compatibilité ─────────────────────────────────────────
+SENDER_CATEGORIES = SENDER_DEFAULT
+
 def categorize_message(msg) -> str:
     """
-    Retourne la catégorie principale d'un message :
-    TRADING | PAYMENT | DELIVERY | PROMO | NOTIF | OTHER
-
-    Ordre de priorité (du plus fort au plus faible) :
-      1. TRADING   — plateformes connues ou mots-clés critiques
-      2. PAYMENT   — services financiers connus ou mots-clés paiement
-      3. DELIVERY  — transporteurs connus ou mots-clés livraison
-      4. PROMO     — expéditeurs marketing connus
-      5. NOTIF     — notifications auto, onboarding, confirmations
-      6. OTHER     — tout le reste (candidats urgents réels)
+    Catégorisation à 2 niveaux :
+      Niveau 1 → SENDER_DEFAULT  : catégorie par défaut selon expéditeur
+      Niveau 2 → SUBJECT_OVERRIDES : override par mots-clés du sujet
+    Les catégories LOCKED_CATEGORIES (TRADING, DELIVERY) ne sont jamais dégradées.
     """
-    combined = (
-        msg["sender_name"] + " " +
-        msg["sender_email"] + " " +
-        msg["subject"] + " " +
-        msg["snippet"]
-    ).lower()
+    sender  = (msg["sender_name"] + " " + msg["sender_email"]).lower()
+    subject = msg["subject"].lower()
+    content = subject + " " + msg["snippet"].lower()
 
-    # 1. Mapping expéditeurs connus (priorité absolue)
-    for key, cat in SENDER_CATEGORIES.items():
-        if key in combined:
+    # ── Niveau 1 : défaut expéditeur ────────────────────────────────
+    default_cat = None
+    for key, cat in SENDER_DEFAULT.items():
+        if key in sender:
+            default_cat = cat
+            break
+
+    # ── Niveau 2 : override par sujet ───────────────────────────────
+    OVERRIDE_PRIORITY = [
+        "DELIVERY", "PAYMENT", "TRADING", "ENERGIE",
+        "SANTE", "BANQUE", "TELECOM", "ASSURANCE", "NOTIF", "PROMO"
+    ]
+    for cat in OVERRIDE_PRIORITY:
+        if any(kw in content for kw in SUBJECT_OVERRIDES.get(cat, [])):
+            # Ne pas dégrader une catégorie verrouillée
+            if default_cat in LOCKED_CATEGORIES and cat not in LOCKED_CATEGORIES:
+                continue
             return cat
 
-    # 2. Mots-clés de contenu — ordre de priorité strict
-    if any(kw in combined for kw in TRADING_CRITICAL_KEYWORDS):
-        return "TRADING"
-    if any(kw in combined for kw in PAYMENT_KEYWORDS):
-        return "PAYMENT"
-    if any(kw in combined for kw in DELIVERY_KEYWORDS):
-        return "DELIVERY"
+    # ── Catégorie défaut expéditeur connu ────────────────────────────
+    if default_cat:
+        return default_cat
 
-    # 3. Notifications auto (onboarding, confirmations génériques)
-    if any(kw in combined for kw in NOTIF_KEYWORDS):
-        return "NOTIF"
-
-    # 4. Indicateurs newsletter/promo dans le contenu
-    promo_hits = sum(1 for p in PROMO_INDICATORS if p in combined)
-    if promo_hits >= 2:
-        return "PROMO"
-
+    # ── Fallback global ──────────────────────────────────────────────
+    combined = sender + " " + content
+    if any(kw in combined for kw in TRADING_CRITICAL_KEYWORDS): return "TRADING"
+    if any(kw in combined for kw in PAYMENT_KEYWORDS):          return "PAYMENT"
+    if any(kw in combined for kw in DELIVERY_KEYWORDS):         return "DELIVERY"
+    if any(kw in combined for kw in NOTIF_KEYWORDS):            return "NOTIF"
+    if sum(1 for p in PROMO_INDICATORS if p in combined) >= 2:  return "PROMO"
     return "OTHER"
 
 
@@ -436,7 +482,8 @@ def get_urgent_emails(service, parsed):
     with Progress(SpinnerColumn(), TextColumn("🔍 Analyse urgences..."), console=console) as p:
         task = p.add_task("", total=len(parsed))
         for msg in parsed:
-            if msg.get("category") in ("PAYMENT", "TRADING", "DELIVERY", "PROMO", "NOTIF"):
+            if msg.get("category") in ("PAYMENT", "TRADING", "DELIVERY", "PROMO", "NOTIF",
+                                   "BANQUE", "SANTE", "TELECOM", "ASSURANCE", "ENERGIE"):
                 p.advance(task); continue  # traités dans leurs modules ou ignorés; continue  # traités dans leurs modules ou ignorés
             body = ""
             if msg["is_unread"] and (datetime.datetime.now() - msg["date"]).days <= 14:
@@ -493,6 +540,126 @@ def get_payment_status(text):
     return "📄 Info", "white", 9
 
 
+def _parse_amount(text: str) -> float:
+    """Extrait le premier montant trouvé dans un texte, retourne 0.0 si absent."""
+    m = re.search(r"(\d+[.,]\d{2})\s*€|€\s*(\d+[.,]\d{2})", text)
+    if m:
+        raw = m.group(1) or m.group(2)
+        return float(raw.replace(",", "."))
+    return 0.0
+
+
+def _group_installments(enriched: list) -> list:
+    """
+    Regroupe les paiements fractionnés (4X, 3X, etc.) par marchand/montant.
+    Ajoute pour chaque groupe :
+      - total_amount   : montant total estimé
+      - paid_amount    : montant déjà payé
+      - remaining      : reste à payer
+      - installments   : liste des versements détectés
+      - progress_bar   : barre de progression ASCII
+    """
+    # Patterns de détection de paiement fractionné
+    FRAC_PATTERNS = [
+        r"(\d+)[eè]re?\s+(?:fois|paiement|versement)",   # "1er paiement"
+        r"(\d+)(?:e|ème|eme)\s+(?:fois|paiement|versement)",  # "2e paiement"
+        r"paiement\s+(\d+)\s*/\s*(\d+)",                  # "paiement 2/4"
+        r"(\d+)\s*/\s*(\d+)\s+(?:paiements?|versements?)",
+        r"en\s+(\d+)[xX]\s+de",                           # "en 4X de"
+        r"(\d+)[xX]\s+(?:sans frais|de|\d)",
+    ]
+
+    groups = {}   # clé → liste de messages
+
+    for m in enriched:
+        text = (m["subject"] + " " + m["snippet"]).lower()
+
+        # Déterminer si c'est un fractionné
+        is_frac    = any(kw in text for kw in ["4x", "3x", "2x", "en 4", "en 3",
+                                                 "paiement reçu", "paiement programmé",
+                                                 "versement", "1er paiement", "2e paiement",
+                                                 "3e paiement", "4e paiement"])
+        # Extraire marchand depuis le sujet
+        merchant   = ""
+        merch_m    = re.search(r"(?:pour|chez|à)\s+([A-Za-zÀ-ÿ0-9\s\.\-]{3,25})", m["subject"], re.IGNORECASE)
+        if merch_m:
+            merchant = merch_m.group(1).strip()[:20]
+
+        # Clé de groupe : expéditeur + marchand + montant approximatif
+        amount = m.get("amount_float", 0.0)
+        # Arrondir pour regrouper les versements similaires
+        amount_key = round(amount, 0) if amount > 0 else 0
+
+        group_key = f"{m['sender_email']}|{merchant}|{amount_key}" if is_frac else None
+
+        if group_key:
+            if group_key not in groups:
+                groups[group_key] = []
+            groups[group_key].append(m)
+        
+        m["group_key"] = group_key
+        m["merchant"]  = merchant
+
+    # Enrichir chaque groupe avec les stats
+    processed_keys = set()
+    result_list    = []
+
+    for m in enriched:
+        gk = m.get("group_key")
+
+        if gk and gk not in processed_keys:
+            group_msgs = groups[gk]
+            processed_keys.add(gk)
+
+            # Compter versements payés vs programmés
+            paid_msgs = [gm for gm in group_msgs
+                         if any(kw in (gm["subject"]+gm["snippet"]).lower()
+                                for kw in ["reçu", "confirmé", "autorisé", "payé", "received", "confirmed"])]
+            prog_msgs = [gm for gm in group_msgs
+                         if any(kw in (gm["subject"]+gm["snippet"]).lower()
+                                for kw in ["programmé", "à venir", "scheduled", "upcoming", "prochain"])]
+
+            amounts   = [gm.get("amount_float", 0.0) for gm in group_msgs if gm.get("amount_float", 0.0) > 0]
+            avg_inst  = sum(amounts) / len(amounts) if amounts else 0
+
+            # Détecter le nombre total de versements
+            nb_total  = 4   # défaut
+            for gm in group_msgs:
+                txt = (gm["subject"] + " " + gm["snippet"]).lower()
+                nm  = re.search(r"en\s+(\d+)[xX]|(\d+)[xX]\s+(?:de|sans)", txt)
+                if nm:
+                    nb_total = int(nm.group(1) or nm.group(2))
+                    break
+
+            nb_paid   = len(paid_msgs)
+            paid_amt  = avg_inst * nb_paid
+            total_amt = avg_inst * nb_total
+            remaining = total_amt - paid_amt
+
+            # Barre de progression
+            pct      = int((nb_paid / nb_total) * 10) if nb_total > 0 else 0
+            bar      = "█" * pct + "░" * (10 - pct)
+            pct_str  = f"{int(nb_paid/nb_total*100)}%" if nb_total > 0 else "?"
+
+            m["is_group_header"] = True
+            m["group_msgs"]      = group_msgs
+            m["nb_paid"]         = nb_paid
+            m["nb_total"]        = nb_total
+            m["paid_amount"]     = paid_amt
+            m["total_amount"]    = total_amt
+            m["remaining"]       = remaining
+            m["progress_bar"]    = f"{bar} {pct_str} ({nb_paid}/{nb_total})"
+            m["is_complete"]     = nb_paid >= nb_total
+            result_list.append(m)
+
+        elif not gk:
+            m["is_group_header"] = False
+            m["group_msgs"]      = []
+            result_list.append(m)
+
+    return result_list
+
+
 def get_payment_emails(parsed):
     payments = [m for m in parsed if m.get("category") == "PAYMENT"]
 
@@ -501,9 +668,9 @@ def get_payment_emails(parsed):
         text   = (m["subject"] + " " + m["snippet"]).lower()
         status, color, prio = get_payment_status(text)
 
-        # Extraction du montant
-        amount_match = re.search(r"(\d+[.,]\d{2})\s*€|€\s*(\d+[.,]\d{2})", m["subject"] + " " + m["snippet"])
-        amount = amount_match.group(1) or amount_match.group(2) if amount_match else ""
+        # Extraction du montant (float + string)
+        amount_float = _parse_amount(m["subject"] + " " + m["snippet"])
+        amount_str   = f"{amount_float:.2f}".replace(".", ",") if amount_float > 0 else ""
 
         # Extraction de la date d'échéance
         date_match = re.search(
@@ -512,51 +679,338 @@ def get_payment_emails(parsed):
         )
         due_date = date_match.group(0) if date_match else ""
 
-        enriched.append({**m, "pay_status": status, "pay_color": color,
-                          "pay_priority": prio, "amount": amount, "due_date": due_date})
+        enriched.append({
+            **m,
+            "pay_status"  : status,
+            "pay_color"   : color,
+            "pay_priority": prio,
+            "amount"      : amount_str,
+            "amount_float": amount_float,
+            "due_date"    : due_date,
+        })
 
-    return sorted(enriched, key=lambda x: x["pay_priority"])
+    # Regrouper les fractionnés
+    enriched = _group_installments(enriched)
+
+    return sorted(enriched, key=lambda x: (x["pay_priority"], -x["date"].timestamp()))
+
+
+
+def _compute_credit_groups(enriched: list) -> dict:
+    """
+    Analyse les paiements fractionnés et retourne un dict de groupes.
+
+    Règles :
+    - Exclure les emails dont l'expéditeur est une promo/newsletter
+    - Exclure les groupes sans montant réel (0€)
+    - Si 0 versement payé : le montant trouvé = total (pas montant × nb_fois)
+    - Extraire le produit/service depuis le sujet de l'email
+    """
+    # Expéditeurs promos à exclure des crédits
+    PROMO_BLACKLIST = [
+        "croisiere", "croisières", "destockage", "déstockage",
+        "so'croisières", "so croisières", "vacances", "voyage prive",
+        "voyageprive", "groupon", "veepee", "vente-privee",
+        "newsletter", "offre exclusive", "bon plan",
+    ]
+
+    # Patterns pour détecter le produit/service dans le sujet
+    PRODUCT_PATTERNS = [
+        r"(?:pour|chez|à|for)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-\&']{2,30}?)(?:\s*[-–,]|\s+\d|\s*$)",
+        r"(?:achat|commande|order)\s+(?:de\s+)?([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-]{2,25})",
+        r"(?:EcoFlow|iPhone|Samsung|Apple|Temu|Amazon|Fnac|Cdiscount|Darty|Boulanger)[^\s]*",
+        r"([A-Z][A-Za-zÀ-ÿ0-9\s\.\-]{3,25}(?:EUROPE|Pro|Max|Ultra|Plus)?)",
+    ]
+
+    groups = {}
+
+    for m in enriched:
+        sender_lower = (m["sender_name"] + " " + m["sender_email"]).lower()
+        subj_lower   = (m["subject"] + " " + m["snippet"]).lower()
+        subj_orig    = m["subject"]
+
+        # ── 1. Exclure les promos ──────────────────────────────────
+        if any(bl in sender_lower for bl in PROMO_BLACKLIST):
+            continue
+
+        # ── 2. Détecter X fois ────────────────────────────────────
+        nb_fois = None
+        xm = re.search(
+            r"en\s+(\d+)\s*x|(\d+)\s*x\s+(?:de|sans|€|\d)|paiement\s+en\s+(\d+)|"
+            r"(\d+)\s+fois\s+(?:de|sans)|versement\s+(\d+)\s*/\s*(\d+)",
+            subj_lower
+        )
+        if xm:
+            nb_fois = int(next(g for g in xm.groups() if g))
+        elif "4x" in subj_lower: nb_fois = 4
+        elif "3x" in subj_lower: nb_fois = 3
+        elif "2x" in subj_lower: nb_fois = 2
+
+        if not nb_fois:
+            continue
+
+        # ── 3. Montant unitaire ───────────────────────────────────
+        amt_str = m.get("amount", "")
+        try:
+            unit = float(amt_str.replace(",", ".")) if amt_str else 0.0
+        except ValueError:
+            unit = 0.0
+
+        if unit <= 0:
+            continue
+
+        # ── 4. Extraire le produit/service depuis le sujet ────────
+        product = ""
+        # Chercher des noms de produits connus en premier
+        known = re.search(
+            r"(?i)(EcoFlow|iPhone|Samsung|MacBook|iPad|Temu|Fnac|Darty|"
+            r"Boulanger|Amazon|Cdiscount|Vistaprint|AirPods|PlayStation|Xbox|"
+            r"Nintendo|Dyson|Roomba|Nespresso)",
+            subj_orig
+        )
+        if known:
+            product = known.group(0)
+        else:
+            # Pattern "pour X" ou "chez X"
+            pm = re.search(
+                r"(?:pour|chez|à)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-]{2,20})",
+                subj_orig, re.IGNORECASE
+            )
+            if pm:
+                product = pm.group(1).strip()[:25]
+            else:
+                # Prendre les premiers mots significatifs du sujet
+                words = [w for w in subj_orig.split()
+                         if len(w) > 3 and w.lower() not in
+                         ("votre", "paiement", "confirmation", "pour", "avec",
+                          "pascal", "voici", "est", "prêt", "dans", "l'échéance",
+                          "l'échéance")]
+                if words:
+                    product = " ".join(words[:3])[:25]
+
+        # ── 5. Clé de groupe : expéditeur + montant arrondi ───────
+        group_key = f"{m['sender_email']}|{round(unit, 1)}"
+
+        if group_key not in groups:
+            groups[group_key] = {
+                "sender"      : m["sender_name"] or m["sender_email"],
+                "product"     : product,
+                "nb_fois"     : nb_fois,
+                "unit_amount" : unit,
+                "total_estim" : 0.0,   # calculé après
+                "paid_count"  : 0,
+                "paid_total"  : 0.0,
+                "emails"      : [],
+            }
+        g = groups[group_key]
+        g["emails"].append(m)
+
+        # Mettre à jour le produit si on en trouve un meilleur
+        if product and len(product) > len(g["product"]):
+            g["product"] = product
+
+        # ── 6. Compter versements confirmés/reçus ─────────────────
+        confirmed_kw = [
+            "reçu", "confirmé", "autorisé", "payé", "received",
+            "confirmed", "1er paiement", "2e paiement", "2ème",
+            "3e paiement", "3ème", "4e paiement", "4ème",
+        ]
+        if any(kw in subj_lower for kw in confirmed_kw):
+            g["paid_count"] += 1
+            g["paid_total"]  = round(g["paid_total"] + unit, 2)
+
+    # ── 7. Calculer le total estimé avec logique corrigée ─────────
+    for g in groups.values():
+        paid   = g["paid_count"]
+        nb     = g["nb_fois"]
+        unit   = g["unit_amount"]
+
+        if paid == 0:
+            # Aucun versement confirmé : le montant trouvé EST probablement
+            # le total de l'échéance à venir — on ne multiplie pas
+            g["total_estim"] = unit
+            g["remaining"]   = unit
+        else:
+            # On a des versements confirmés : on peut extrapoler le total
+            g["total_estim"] = round(unit * nb, 2)
+            g["remaining"]   = max(0.0, round(g["total_estim"] - g["paid_total"], 2))
+
+        g["is_complete"] = paid >= nb
+
+    # ── 8. Filtrer les groupes sans vrais versements ET sans montant ─
+    groups = {k: g for k, g in groups.items()
+              if g["total_estim"] > 0}
+
+    return groups
+
+
+def display_payment_summary(enriched: list):
+    """Affiche le récapitulatif des crédits / paiements en X fois."""
+    groups = _compute_credit_groups(enriched)
+    if not groups:
+        return
+
+    console.print(Rule(
+        "[bold magenta]💳 Récapitulatif Crédits & Paiements en X fois[/bold magenta]"
+    ))
+
+    t = Table(box=box.ROUNDED, show_lines=True)
+    t.add_column("Expéditeur",   width=18, style="magenta",    no_wrap=True)
+    t.add_column("Produit/Serv", width=20, style="cyan",       no_wrap=True)
+    t.add_column("Échéances",    width=14, justify="center")
+    t.add_column("Progression",  width=14, justify="center")
+    t.add_column("Payé",         width=10, justify="right",    style="green")
+    t.add_column("Total",        width=10, justify="right",    style="white")
+    t.add_column("Restant dû",   width=11, justify="right")
+    t.add_column("Statut",       width=12, justify="center")
+
+    total_remaining = 0.0
+
+    for g in sorted(groups.values(),
+                    key=lambda x: (x["is_complete"], -x["remaining"])):
+        nb    = g["nb_fois"]
+        paid  = min(g["paid_count"], nb)
+
+        # Barre de progression
+        filled = int((paid / nb) * 10) if nb else 0
+        bar    = (
+            f"[green]{'█' * filled}[/green]"
+            f"[dim]{'░' * (10 - filled)}[/dim]"
+        )
+        pct    = f"{int(paid/nb*100)}%" if nb else "?"
+
+        # Couleur restant dû
+        rem    = g["remaining"]
+        if g["is_complete"]:
+            rem_str = "[green]0.00 €[/green]"
+        elif rem > 200:
+            rem_str = f"[bold red]{rem:.2f} €[/bold red]"
+        elif rem > 50:
+            rem_str = f"[yellow]{rem:.2f} €[/yellow]"
+        else:
+            rem_str = f"{rem:.2f} €"
+
+        # Note sur le total (si 0 versement payé → montant = total de l'échéance)
+        total_note = ""
+        if paid == 0:
+            total_note = "[dim] (1 éch.)[/dim]"
+
+        status = (
+            "[green]✅ Soldé[/green]"
+            if g["is_complete"]
+            else f"[yellow]⏳ {nb - paid} restant(s)[/yellow]"
+        )
+
+        t.add_row(
+            (g["sender"])[:17],
+            (g["product"] or "—")[:19],
+            f"{paid}/{nb}x  {g['unit_amount']:.2f}€",
+            f"{bar} {pct}",
+            f"{g['paid_total']:.2f} €",
+            f"{g['total_estim']:.2f} €{total_note}",
+            rem_str,
+            status,
+        )
+
+        if not g["is_complete"]:
+            total_remaining += rem
+
+    console.print(t)
+
+    if total_remaining > 0:
+        console.print(
+            f"  [bold red]💰 Total restant dû (crédits actifs) : "
+            f"{total_remaining:.2f} €[/bold red]\n"
+        )
+    else:
+        console.print("  [green]✅ Tous les crédits sont soldés ![/green]\n")
 
 
 def _render_payments_table(payments: list, selected: set):
-    """Tableau des paiements avec cases à cocher pour suppression."""
+    """Tableau des paiements avec cases à cocher et affichage des fractionnés."""
+    # ── Section 1 : Paiements fractionnés regroupés ───────────────────
+    fractioned = [m for m in payments if m.get("is_group_header") and not m.get("is_complete")]
+    completed  = [m for m in payments if m.get("is_group_header") and m.get("is_complete")]
+    singles    = [m for m in payments if not m.get("is_group_header")]
+
+    if fractioned:
+        tf = Table(
+            title="📊 Crédits & Paiements Fractionnés EN COURS",
+            box=box.ROUNDED, show_lines=True, style="bold"
+        )
+        tf.add_column("Expéditeur",  width=18, style="magenta")
+        tf.add_column("Marchand",    width=18, style="cyan")
+        tf.add_column("Progression", width=22, style="yellow")
+        tf.add_column("Payé",        width=10, style="bold green",  justify="right")
+        tf.add_column("Reste",       width=10, style="bold red",    justify="right")
+        tf.add_column("Total",       width=10, style="bold white",  justify="right")
+        tf.add_column("Statut",      width=10)
+
+        total_remaining = 0.0
+        for m in fractioned:
+            remaining = m.get("remaining", 0.0)
+            total_remaining += remaining
+            complete_label = "[green]✅ Soldé[/green]" if m.get("is_complete") else "[yellow]⏳ En cours[/yellow]"
+            tf.add_row(
+                (m["sender_name"] or m["sender_email"])[:17],
+                m.get("merchant", "—")[:17],
+                f"[yellow]{m.get('progress_bar','—')}[/yellow]",
+                f"{m.get('paid_amount',0):.2f} €",
+                f"[red]{remaining:.2f} €[/red]" if remaining > 0 else "—",
+                f"{m.get('total_amount',0):.2f} €" if m.get("total_amount",0) > 0 else "—",
+                complete_label,
+            )
+
+        console.print(tf)
+        console.print(
+            f"  [bold red]💸 Total restant à rembourser : {total_remaining:.2f} €[/bold red]\n"
+        )
+
+    if completed:
+        console.print(f"  [dim]✅ {len(completed)} crédit(s)/fractionné(s) soldé(s) — archivables[/dim]\n")
+
+    # ── Section 2 : Tous les emails avec numérotation + cases ────────
     t = Table(
-        title=f"💳 Paiements & Finances ({len(payments)} emails)  —  [cyan]?[/cyan]=aide",
-        box=box.ROUNDED, show_lines=True
+        title=f"💳 Tous les emails Paiements ({len(payments)})  —  [cyan]?[/cyan]=aide",
+        box=box.SIMPLE_HEAD, show_lines=False
     )
     t.add_column("#",          width=4,  justify="right", style="bold dim")
     t.add_column("✔",          width=3,  justify="center")
     t.add_column("Statut",     width=20)
     t.add_column("Date",       width=11, style="cyan")
-    t.add_column("Expéditeur", width=20, style="magenta", no_wrap=True)
-    t.add_column("Sujet",      width=36, style="white")
+    t.add_column("Expéditeur", width=18, style="magenta", no_wrap=True)
+    t.add_column("Sujet",      width=38, style="white")
     t.add_column("Montant",    width=9,  style="bold green", justify="right")
-    t.add_column("Échéance",   width=12, style="yellow")
+    t.add_column("Progrès",    width=16, style="yellow")
 
     for i, m in enumerate(payments, 1):
         check = "[bold green]■[/bold green]" if i in selected else "[dim]□[/dim]"
+        progress = ""
+        if m.get("is_group_header") and m.get("total_amount", 0) > 0:
+            progress = m.get("progress_bar", "")[:15]
+        elif m.get("is_complete"):
+            progress = "[green]✅ Soldé[/green]"
+
         t.add_row(
             str(i), check,
             f"[{m['pay_color']}]{m['pay_status']}[/{m['pay_color']}]",
             m["date"].strftime("%Y-%m-%d"),
-            (m["sender_name"] or m["sender_email"])[:19],
-            m["subject"][:35],
+            (m["sender_name"] or m["sender_email"])[:17],
+            m["subject"][:37],
             m["amount"] + " €" if m["amount"] else "—",
-            m["due_date"] or "—",
+            progress,
         )
 
-    nb_sel = len(selected)
     console.print(t)
 
-    # Résumé statuts
-    late     = sum(1 for m in payments if "EN RETARD" in m["pay_status"])
-    upcoming = sum(1 for m in payments if "ÉCHÉANCE"  in m["pay_status"])
-    reminder = sum(1 for m in payments if "RAPPEL"    in m["pay_status"])
+    # Résumé
+    late     = sum(1 for m in payments if "EN RETARD" in m.get("pay_status",""))
+    upcoming = sum(1 for m in payments if "ÉCHÉANCE"  in m.get("pay_status",""))
+    nb_sel   = len(selected)
     console.print(
         f"  [red]🔴 En retard : {late}[/red]   "
         f"[yellow]🟠 Échéances : {upcoming}[/yellow]   "
-        f"[yellow]🟡 Rappels : {reminder}[/yellow]   "
-        f"[dim]|[/dim]   [bold]Sélectionnés : [cyan]{nb_sel}/{len(payments)}[/cyan][/bold]\n"
+        f"[bold]Sélectionnés : [cyan]{nb_sel}/{len(payments)}[/cyan][/bold]\n"
     )
 
 
@@ -792,6 +1246,7 @@ def interactive_payments(service, payments: list):
     while True:
         console.clear()
         console.rule("[bold magenta]💳 Paiements & Finances[/bold magenta]")
+        display_payment_summary(payments)
         _render_payments_table(payments, selected)
         console.print(
             "  [dim]Commandes :[/dim] "
@@ -1081,36 +1536,62 @@ def analyze_senders(parsed):
 
 
 CATEGORY_ICONS = {
-    "TRADING" : "📈", "PAYMENT": "💳", "DELIVERY": "📦",
-    "PROMO"   : "📢", "NOTIF"  : "🔔", "OTHER"   : "📧",
+    "TRADING"   : "📈",
+    "PAYMENT"   : "💳",
+    "DELIVERY"  : "📦",
+    "BANQUE"    : "🏦",
+    "SANTE"     : "🏥",
+    "TELECOM"   : "📱",
+    "ASSURANCE" : "🛡️",
+    "PROMO"     : "📢",
+    "NOTIF"     : "🔔",
+    "ENERGIE"   : "⚡",
+    "OTHER"     : "📧",
 }
 
-def display_senders(sender_stats):
-    sorted_s = sorted(sender_stats.values(), key=lambda x: x["count"], reverse=True)
-    t = Table(
-        title=f"📊 Expéditeurs — Top 30 (sur {len(sorted_s)} uniques)",
-        box=box.SIMPLE_HEAD
-    )
-    t.add_column("#",         width=4,  style="dim")
-    t.add_column("Expéditeur",width=26, style="bold cyan")
-    t.add_column("Domaine",   width=22, style="blue")
-    t.add_column("Catégorie", width=14)
-    t.add_column("Total",     width=7,  justify="right", style="bold white")
-    t.add_column("Non lus",   width=8,  justify="right")
-    t.add_column("Fréq/sem",  width=9,  justify="right", style="yellow")
-    t.add_column("Dernier",   width=12, style="green")
+# Couleurs Rich associées
+CATEGORY_COLORS = {
+    "TRADING"   : "bold yellow",
+    "PAYMENT"   : "bold magenta",
+    "DELIVERY"  : "bold blue",
+    "BANQUE"    : "bold cyan",
+    "SANTE"     : "bold green",
+    "TELECOM"   : "bold bright_blue",
+    "ASSURANCE" : "bold bright_magenta",
+    "PROMO"     : "dim",
+    "NOTIF"     : "dim cyan",
+    "ENERGIE"   : "bold bright_yellow",
+    "OTHER"     : "white",
+}
 
-    cat_colors = {
-        "TRADING" : "bold yellow", "PAYMENT": "bold magenta",
-        "DELIVERY": "bold blue",   "PROMO"  : "dim",
-        "NOTIF"   : "dim cyan",    "OTHER"  : "white",
-    }
-    for i, s in enumerate(sorted_s[:30], 1):
+def _render_senders_table(sorted_s: list, selected: set, page: int, page_size: int = 25):
+    """Affiche le tableau paginé des expéditeurs avec cases à cocher."""
+    start_i = page * page_size
+    end_i   = min(start_i + page_size, len(sorted_s))
+    page_items = sorted_s[start_i:end_i]
+
+    t = Table(
+        title=f"📊 Expéditeurs — [{start_i+1}-{end_i}] sur {len(sorted_s)}  "
+              f"(page {page+1}/{-(-len(sorted_s)//page_size)})  —  [cyan]?[/cyan]=aide",
+        box=box.SIMPLE_HEAD, show_lines=False
+    )
+    t.add_column("#",          width=4,  justify="right", style="bold dim")
+    t.add_column("✔",          width=3,  justify="center")
+    t.add_column("Expéditeur", width=26, style="bold cyan")
+    t.add_column("Domaine",    width=22, style="blue")
+    t.add_column("Catégorie",  width=16)
+    t.add_column("Total",      width=6,  justify="right", style="bold white")
+    t.add_column("Non lus",    width=7,  justify="right")
+    t.add_column("Fréq/sem",   width=8,  justify="right", style="yellow")
+    t.add_column("Dernier",    width=11, style="green")
+
+    for abs_i, s in enumerate(page_items, start=start_i+1):
         icon  = CATEGORY_ICONS.get(s["category"], "📧")
-        color = cat_colors.get(s["category"], "white")
+        color = CATEGORY_COLORS.get(s["category"], "white")
+        check = "[bold green]■[/bold green]" if abs_i in selected else "[dim]□[/dim]"
         unread_str = f"[red]{s['unread']}[/red]" if s["unread"] > 0 else "0"
         t.add_row(
-            str(i),
+            str(abs_i), check,
             (s["name"] or s["email"])[:25],
             s["domain"][:21],
             f"[{color}]{icon} {s['category']}[/{color}]",
@@ -1121,19 +1602,261 @@ def display_senders(sender_stats):
         )
     console.print(t)
 
-    # Stats par catégorie
+    # Résumé stats par catégorie
     from collections import Counter
-    cat_count = Counter(s["category"] for s in sender_stats.values())
-    summary = Table(box=box.SIMPLE, show_header=False)
-    summary.add_column("Cat",  style="bold")
-    summary.add_column("Exp.", style="white", justify="right")
-    summary.add_column("Emails", style="bold white", justify="right")
-    for cat, icon in CATEGORY_ICONS.items():
-        senders_in_cat = [s for s in sender_stats.values() if s["category"] == cat]
-        total_emails   = sum(s["count"] for s in senders_in_cat)
-        if senders_in_cat:
-            summary.add_row(f"{icon} {cat}", str(len(senders_in_cat)), str(total_emails))
-    console.print(Panel(summary, title="📈 Répartition par catégorie", border_style="cyan"))
+    cat_totals = {}
+    for s in sorted_s:
+        c = s["category"]
+        if c not in cat_totals:
+            cat_totals[c] = {"senders": 0, "emails": 0}
+        cat_totals[c]["senders"] += 1
+        cat_totals[c]["emails"]  += s["count"]
+
+    parts = []
+    for cat in ["TRADING","PAYMENT","DELIVERY","BANQUE","SANTE","TELECOM","ASSURANCE","PROMO","NOTIF","OTHER"]:
+        if cat in cat_totals:
+            icon  = CATEGORY_ICONS.get(cat, "📧")
+            color = CATEGORY_COLORS.get(cat, "white")
+            parts.append(f"[{color}]{icon}{cat_totals[cat]['emails']}[/{color}]")
+    console.print("  " + "  ".join(parts) + f"   [bold]Sélectionnés: [cyan]{len(selected)}[/cyan][/bold]\n")
+
+
+def _print_senders_help():
+    h = Table(box=box.SIMPLE, show_header=False, padding=(0,1))
+    h.add_column("Cmd",  style="bold cyan", width=22)
+    h.add_column("Effet",style="white",     width=55)
+    rows = [
+        ("1,3,5  ou  2-8",    "Toggle sélection individuelle ou plage"),
+        ("a  /  n",           "Tout sélectionner / désélectionner"),
+        ("f CAT",             "Filtrer par catégorie  ex: f PROMO  f BANQUE"),
+        ("n+  /  n-",         "Page suivante / précédente"),
+        ("cat N NOUVELLE_CAT","Changer la catégorie de l'expéditeur N"),
+        ("del",               "🗑️  Supprimer TOUS les emails des expéditeurs sélectionnés"),
+        ("arc",               "📁 Archiver tous les emails des expéditeurs sélectionnés"),
+        ("trash",             "🗑️  Mettre à la corbeille (recommandé)"),
+        ("info N",            "Afficher les derniers sujets de l'expéditeur N"),
+        ("q",                 "Retour au menu principal"),
+        ("?",                 "Afficher cette aide"),
+    ]
+    for cmd, desc in rows:
+        h.add_row(cmd, desc)
+    console.print(Panel(h, title="💡 Aide — Gestion des Expéditeurs", border_style="cyan"))
+
+
+def interactive_senders(service, sender_stats: dict):
+    """Module expéditeurs interactif avec pagination, filtrage et actions."""
+    all_senders = sorted(sender_stats.values(), key=lambda x: x["count"], reverse=True)
+    display_list = list(all_senders)   # liste affichée (peut être filtrée)
+    selected  = set()
+    page      = 0
+    PAGE_SIZE = 25
+    active_filter = None
+
+    ALL_CATS = list(CATEGORY_ICONS.keys())
+
+    while True:
+        console.clear()
+        title = "[bold]📊 Gestion des Expéditeurs[/bold]"
+        if active_filter:
+            title += f"  [yellow]— Filtre: {active_filter}[/yellow]"
+        console.rule(title)
+        _render_senders_table(display_list, selected, page, PAGE_SIZE)
+
+        console.print(
+            "  [dim]Commandes :[/dim] "
+            "[cyan]1,3[/cyan]=toggle  [cyan]2-5[/cyan]=plage  "
+            "[cyan]a[/cyan]/[cyan]n[/cyan]=tout/rien  "
+            "[cyan]f CAT[/cyan]=filtre  "
+            "[cyan]n+[/cyan]/[cyan]n-[/cyan]=pages  "
+            "[cyan]cat N CAT[/cyan]=recatégoriser  "
+            "[cyan]del[/cyan]/[cyan]arc[/cyan]/[cyan]trash[/cyan]=actions  "
+            "[cyan]info N[/cyan]=détails  "
+            "[cyan]q[/cyan]=quitter  [cyan]?[/cyan]=aide"
+        )
+        raw = Prompt.ask("\n[bold yellow]>[/bold yellow]").strip()
+        rl  = raw.lower()
+
+        # ── Aide ────────────────────────────────────────────────────
+        if rl == "?":
+            _print_senders_help()
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Quitter ─────────────────────────────────────────────────
+        elif rl in ("q", ""):
+            break
+
+        # ── Pagination ──────────────────────────────────────────────
+        elif rl in ("n+", "next", ">"):
+            max_page = max(0, (-(-len(display_list)//PAGE_SIZE)) - 1)
+            page = min(page + 1, max_page)
+        elif rl in ("n-", "prev", "<"):
+            page = max(0, page - 1)
+
+        # ── Tout / rien ─────────────────────────────────────────────
+        elif rl == "a":
+            selected = set(range(1, len(display_list) + 1))
+        elif rl == "n":
+            selected = set()
+
+        # ── Filtre par catégorie : f PROMO ───────────────────────────
+        elif rl.startswith("f "):
+            cat_filter = raw[2:].strip().upper()
+            if cat_filter == "ALL" or cat_filter == "":
+                display_list  = list(all_senders)
+                active_filter = None
+                console.print("[green]→ Filtre retiré.[/green]")
+            elif cat_filter in ALL_CATS:
+                display_list  = [s for s in all_senders if s["category"] == cat_filter]
+                active_filter = cat_filter
+                selected      = set()
+                page          = 0
+                console.print(f"[green]→ {len(display_list)} expéditeur(s) dans {cat_filter}.[/green]")
+            else:
+                console.print(f"[red]Catégorie inconnue. Valides : {', '.join(ALL_CATS)}[/red]")
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Recatégoriser : cat N NOUVELLE_CAT ──────────────────────
+        elif rl.startswith("cat "):
+            parts = raw.split()
+            if len(parts) == 3:
+                try:
+                    idx     = int(parts[1])
+                    new_cat = parts[2].upper()
+                    if 1 <= idx <= len(display_list) and new_cat in ALL_CATS:
+                        old_cat = display_list[idx-1]["category"]
+                        email   = display_list[idx-1]["email"]
+                        # Mise à jour dans display_list ET all_senders
+                        display_list[idx-1]["category"] = new_cat
+                        for s in all_senders:
+                            if s["email"] == email:
+                                s["category"] = new_cat
+                        # Mise à jour dans SENDER_DEFAULT pour cette session
+                        SENDER_DEFAULT[email] = new_cat
+                        console.print(
+                            f"[green]✅ {display_list[idx-1]['name']} : "
+                            f"{old_cat} → {new_cat}[/green]"
+                        )
+                    else:
+                        console.print(f"[red]Index ou catégorie invalide. Cats: {', '.join(ALL_CATS)}[/red]")
+                except ValueError:
+                    console.print("[red]Format : cat N CATÉGORIE  (ex: cat 3 PAYMENT)[/red]")
+            else:
+                console.print("[red]Format : cat N CATÉGORIE  (ex: cat 5 DELIVERY)[/red]")
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Infos détaillées : info N ────────────────────────────────
+        elif rl.startswith("info "):
+            try:
+                idx = int(raw.split()[1])
+                if 1 <= idx <= len(display_list):
+                    s = display_list[idx-1]
+                    subjects_preview = "\n".join(
+                        f"  • {subj[:70]}" for subj in s.get("subjects", [])[:10]
+                    )
+                    console.print(Panel(
+                        f"[bold cyan]{s['name']}[/bold cyan]  —  [blue]{s['email']}[/blue]\n"
+                        f"Catégorie : [{CATEGORY_COLORS.get(s['category'],'white')}]"
+                        f"{CATEGORY_ICONS.get(s['category'],'')} {s['category']}[/{CATEGORY_COLORS.get(s['category'],'white')}]\n"
+                        f"Total : [bold]{s['count']}[/bold] emails  |  "
+                        f"Non lus : [red]{s['unread']}[/red]  |  "
+                        f"Fréq : [yellow]{s['freq_per_week']}/sem[/yellow]\n"
+                        f"Premier : {s.get('first_date', s['last_date']).strftime('%Y-%m-%d')}  →  "
+                        f"Dernier : {s['last_date'].strftime('%Y-%m-%d')}\n\n"
+                        f"[bold]Derniers sujets :[/bold]\n{subjects_preview}",
+                        title=f"ℹ️  Détails expéditeur #{idx}",
+                        border_style="cyan"
+                    ))
+                    Prompt.ask("[dim]Entrée pour continuer[/dim]")
+            except (ValueError, IndexError):
+                console.print("[red]Format : info N  (ex: info 3)[/red]")
+
+        # ── Actions sur sélection ────────────────────────────────────
+        elif rl in ("del", "arc", "trash"):
+            if not selected:
+                console.print("[yellow]⚠️  Aucun expéditeur sélectionné.[/yellow]")
+                Prompt.ask("[dim]Entrée pour continuer[/dim]")
+                continue
+
+            # Construire la liste des emails à traiter
+            target_senders = [display_list[i-1] for i in sorted(selected)
+                              if 1 <= i <= len(display_list)]
+            total_emails   = sum(s["count"] for s in target_senders)
+
+            action_map = {"del": "DELETE", "arc": "ARCHIVE", "trash": "TRASH"}
+            action     = action_map[rl]
+
+            console.print(Panel(
+                f"[bold]{action}[/bold] sur [bold]{len(target_senders)}[/bold] expéditeur(s) "
+                f"— environ [bold yellow]{total_emails}[/bold yellow] emails :\n" +
+                "\n".join(f"  • {s['name']} ({s['count']} emails)" for s in target_senders[:8]) +
+                (f"\n  … et {len(target_senders)-8} autres" if len(target_senders) > 8 else ""),
+                title="⚡ Confirmation", border_style="yellow"
+            ))
+
+            if not Confirm.ask("[bold red]Confirmer ?[/bold red]", default=False):
+                console.print("[dim]→ Annulé.[/dim]")
+                continue
+
+            for s in target_senders:
+                query  = f"from:{s['email']}"
+                msgs   = get_messages(service, max_results=500, query=query)
+                ids    = [m["id"] for m in msgs]
+                if not ids:
+                    continue
+                for start in range(0, len(ids), 1000):
+                    batch = ids[start:start+1000]
+                    if action == "DELETE":
+                        try:
+                            service.users().messages().batchDelete(
+                                userId="me", body={"ids": batch}).execute()
+                        except Exception:
+                            service.users().messages().batchModify(
+                                userId="me",
+                                body={"ids": batch,
+                                      "addLabelIds": ["TRASH"],
+                                      "removeLabelIds": ["INBOX","UNREAD"]}
+                            ).execute()
+                    elif action == "TRASH":
+                        service.users().messages().batchModify(
+                            userId="me",
+                            body={"ids": batch,
+                                  "addLabelIds": ["TRASH"],
+                                  "removeLabelIds": ["INBOX","UNREAD"]}
+                        ).execute()
+                    elif action == "ARCHIVE":
+                        service.users().messages().batchModify(
+                            userId="me",
+                            body={"ids": batch, "removeLabelIds": ["INBOX"]}
+                        ).execute()
+                console.print(f"  [green]✅ {s['name']} : {len(ids)} emails traités.[/green]")
+
+            selected = set()
+            Prompt.ask("[dim]Entrée pour continuer[/dim]")
+
+        # ── Sélection numérique ──────────────────────────────────────
+        else:
+            import re as _re
+            range_m = _re.match(r"^(\d+)-(\d+)$", rl)
+            if range_m:
+                a, b = int(range_m.group(1)), int(range_m.group(2))
+                for idx in range(min(a,b), max(a,b)+1):
+                    if 1 <= idx <= len(display_list):
+                        if idx in selected: selected.discard(idx)
+                        else:               selected.add(idx)
+            elif _re.match(r"^[\d,\s]+$", rl):
+                for token in _re.split(r"[,\s]+", rl):
+                    if token.isdigit():
+                        idx = int(token)
+                        if 1 <= idx <= len(display_list):
+                            if idx in selected: selected.discard(idx)
+                            else:               selected.add(idx)
+            else:
+                console.print("[red]Commande inconnue. [bold]?[/bold] pour l'aide.[/red]")
+
+
+def display_senders(sender_stats):
+    """Alias — redirige vers le module interactif."""
+    interactive_senders(None, sender_stats)
 
 
 # ─────────────────────────────────────────────────────────
@@ -1428,7 +2151,7 @@ def display_cleanup(suggestions):
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║        Gmail Smart Manager — Premier Tech Edition        ║
-║              Pascal Bey  ·  v2.4  ·  2026               ║
+║              Pascal Bey  ·  v2.6  ·  2026               ║
 ╠══════════════════════════════════════════════════════════╣
 ║  🔴 Urgents   💳 Paiements   📈 Trading                  ║
 ║  📦 Colis     📊 Expéditeurs  🧹 Nettoyage               ║
@@ -1476,15 +2199,26 @@ def main():
     cats = Counter(m.get("category","OTHER") for m in parsed)
     nb_urgent_other = sum(1 for m in parsed
                           if m.get("category") == "OTHER" and m.get("is_unread"))
+    overview_lines = []
+    overview_map = [
+        ("TRADING",   "bold yellow"),   ("PAYMENT",   "bold magenta"),
+        ("DELIVERY",  "bold blue"),      ("BANQUE",    "bold cyan"),
+        ("SANTE",     "bold green"),     ("TELECOM",   "bold bright_blue"),
+        ("ASSURANCE", "bold bright_magenta"),
+        ("PROMO",     "dim"),            ("NOTIF",     "dim cyan"),
+    ]
+    for cat, color in overview_map:
+        n = cats.get(cat, 0)
+        if n > 0:
+            icon = CATEGORY_ICONS.get(cat, "📧")
+            overview_lines.append(f"  {icon} {cat:<10}: [{color}]{n}[/{color}]")
+    overview_lines.append(
+        f"  📧 Autres     : {cats.get('OTHER',0)} "
+        f"([bold red]{nb_urgent_other} non lus[/bold red])"
+    )
+    overview_lines.append(f"  👥 Expéditeurs uniques : {len(sender_stats)}")
     console.print(Panel(
-        f"  📈 Trading    : [bold yellow]{cats.get('TRADING',0)}[/bold yellow] emails\n"
-        f"  💳 Paiements  : [bold magenta]{cats.get('PAYMENT',0)}[/bold magenta] emails\n"
-        f"  📦 Livraisons : [bold blue]{cats.get('DELIVERY',0)}[/bold blue] emails\n"
-        f"  📢 Promos     : [dim]{cats.get('PROMO',0)}[/dim] emails\n"
-        f"  🔔 Notifs auto: [dim cyan]{cats.get('NOTIF',0)}[/dim cyan] emails\n"
-        f"  📧 Autres     : {cats.get('OTHER',0)} emails "
-        f"([bold red]{nb_urgent_other} non lus[/bold red])\n"
-        f"  👥 Expéditeurs uniques : {len(sender_stats)}",
+        "\n".join(overview_lines),
         title="📊 Vue d'ensemble", border_style="cyan"
     ))
 
@@ -1517,7 +2251,7 @@ def main():
         elif choice == "4":
             display_deliveries(get_delivery_emails(service, parsed))
         elif choice == "5":
-            display_senders(sender_stats)
+            interactive_senders(service, sender_stats)
         elif choice == "6":
             display_cleanup(suggestions)
         elif choice == "7":
