@@ -244,16 +244,22 @@ SENDER_DEFAULT = {
     "amazon logistics"   : "DELIVERY",  "nationex"         : "DELIVERY",
     "dicom"              : "DELIVERY",
 
-    # 📈 TRADING PURS (jamais overridés vers autre chose)
+    # 📈 TRADING PURS — uniquement plateformes crypto/bourse dédiées
+    # Règle : seuls les expéditeurs dont le BUT UNIQUE est le trading
     "kraken"             : "TRADING",   "tradingview"      : "TRADING",
     "binance"            : "TRADING",   "coinbase"         : "TRADING",
+    "crypto.com"         : "TRADING",   "coinhouse"        : "TRADING",
     "bitget"             : "TRADING",   "bybit"            : "TRADING",
-    "kucoin"             : "TRADING",   "degiro"           : "TRADING",
-    "etoro"              : "TRADING",   "trade republic"   : "TRADING",
-    "saxo"               : "TRADING",   "ig.com"           : "TRADING",
-    "bourse direct"      : "TRADING",   "interactive broker": "TRADING",
-    # Revolut → TRADING car emails crypto/ordres (pas pure banque)
-    "revolut"            : "TRADING",
+    "kucoin"             : "TRADING",   "bitmex"           : "TRADING",
+    "ftx"                : "TRADING",   "gate.io"          : "TRADING",
+    "okx"                : "TRADING",   "huobi"            : "TRADING",
+    # Bourse traditionnelle
+    "degiro"             : "TRADING",   "bourse direct"    : "TRADING",
+    "interactive broker" : "TRADING",   "saxo"             : "TRADING",
+    "ig.com"             : "TRADING",   "trade republic"   : "TRADING",
+    # Revolut → BANQUE (app bancaire qui PROPOSE aussi du crypto)
+    # Ses emails sont à 80% du marketing, pas du vrai trading
+    "revolut"            : "BANQUE",
 
     # 💳 PAIEMENT PURS
     "paypal"             : "PAYMENT",   "klarna"           : "PAYMENT",
@@ -1303,16 +1309,44 @@ def display_payments(payments):
 # 📈 MODULE 3 : TRADING
 # ─────────────────────────────────────────────────────────
 TRADING_STATUS_RULES = [
-    (["margin call", "appel de marge", "liquidation", "stop out",
-      "force close", "dépôt requis", "deposit required"],          "🚨 CRITIQUE",       "bold red",    1),
-    (["order filled", "order executed", "trade executed",
-      "position fermée", "ordre exécuté", "filled"],               "⚡ ORDRE EXÉCUTÉ",  "bold yellow", 2),
-    (["stop loss", "take profit", "sl atteint", "tp atteint"],     "🎯 SL/TP ATTEINT",  "yellow",      3),
-    (["deposit", "withdrawal", "dépôt", "retrait", "wire"],        "💰 TRANSFERT",      "cyan",        4),
-    (["new idea", "nouvelle idée", "signal", "alert", "alerte"],   "💡 SIGNAL/IDÉE",    "blue",        5),
-    (["newsletter", "weekly", "monthly", "rapport", "report"],     "📰 RAPPORT",        "dim",         7),
-    (["login", "connexion", "security", "sécurité", "2fa"],        "🔐 SÉCURITÉ",       "magenta",     2),
+    # Niveau 1 — Critiques (action immédiate requise)
+    (["margin call", "appel de marge", "liquidation", "margin level",
+      "force close", "dépôt requis", "deposit required", "stop out"],
+     "🚨 CRITIQUE",      "bold red",    1),
+
+    # Niveau 2 — Sécurité compte
+    (["login", "connexion", "security", "sécurité", "2fa",
+      "sign-in", "suspicious", "unauthorized"],
+     "🔐 SÉCURITÉ",      "bold magenta", 2),
+
+    # Niveau 3 — Ordres exécutés
+    (["order filled", "order executed", "trade executed", "filled",
+      "position fermée", "ordre exécuté",
+      "ordre d'achat", "ordre de vente",
+      "exécuté", "exécutée"],
+     "⚡ ORDRE EXÉCUTÉ", "bold yellow", 3),
+
+    # Niveau 4 — SL / TP
+    (["stop loss", "take profit", "sl atteint", "tp atteint",
+      "stop-loss", "take-profit"],
+     "🎯 SL/TP",         "yellow",      4),
+
+    # Niveau 5 — Transferts / dépôts
+    (["deposit", "withdrawal", "dépôt", "retrait", "wire",
+      "virement", "funding"],
+     "💰 TRANSFERT",     "cyan",        5),
+
+    # Niveau 6 — Signaux / alertes prix
+    (["signal", "alert", "alerte", "new idea", "nouvelle idée",
+      "price alert", "alerte de prix"],
+     "💡 SIGNAL/IDÉE",   "blue",        6),
+
+    # Niveau 7 — Rapports périodiques
+    (["weekly", "monthly", "rapport", "report", "statement",
+      "relevé", "summary"],
+     "📊 RAPPORT",       "dim",         7),
 ]
+
 
 def get_trading_status(text):
     for keywords, label, color, prio in TRADING_STATUS_RULES:
@@ -1321,25 +1355,70 @@ def get_trading_status(text):
     return "📊 Info Trading", "white", 6
 
 
-def get_trading_emails(parsed):
-    trades = [m for m in parsed if m.get("category") == "TRADING"]
 
-    enriched = []
-    for m in trades:
-        text = (m["subject"] + " " + m["snippet"]).lower()
+# ── Whitelist stricte des expéditeurs TRADING ────────────────────────
+# Seuls ces domaines/noms peuvent apparaître dans le module Trading
+TRADING_WHITELIST = {
+    "kraken", "tradingview", "binance", "coinbase", "crypto.com",
+    "coinhouse", "bitget", "bybit", "kucoin", "bitmex", "gate.io",
+    "okx", "huobi", "degiro", "bourse direct", "interactive broker",
+    "saxo", "ig.com", "trade republic", "etoro",
+}
+
+# Mots-clés de marketing/promo à exclure même dans les emails trading
+TRADING_PROMO_BLACKLIST = [
+    "inscrivez-vous", "terminez votre inscription",
+    "gagnez jusqu", "pour chaque ami", "parrainage",
+    "passez au trading", "dépensez vos cryptos",
+    "sublimez", "rentabilisez", "transformez votre curiosité",
+    "il vous reste", "plus que", "rejoindre notre",
+    "nos astuces", "préparez vos impôts",
+    "remboursement", "refund", "retour commande",
+    "amazon", "temu", "fnac", "cdiscount",
+    "jour de paie", "épargnez chaque semaine",
+]
+
+def get_trading_emails(parsed: list) -> list:
+    """
+    Retourne uniquement les emails de trading RÉELS :
+    - Expéditeur dans TRADING_WHITELIST
+    - Contenu non promotionnel
+    - Filtre les remboursements Amazon, pubs Revolut, etc.
+    """
+    trades    = []
+    for m in parsed:
+        sender_low = (m["sender_name"] + " " + m["sender_email"]).lower()
+        subj_low   = (m["subject"]     + " " + m["snippet"]).lower()
+
+        # ── 1. Expéditeur doit être dans la whitelist ─────────────
+        is_whitelisted = any(w in sender_low for w in TRADING_WHITELIST)
+        if not is_whitelisted:
+            continue
+
+        # ── 2. Exclure le contenu promotionnel/marketing ──────────
+        if any(bl in subj_low for bl in TRADING_PROMO_BLACKLIST):
+            continue
+
+        # ── 3. Déterminer le statut ───────────────────────────────
+        text = subj_low
         status, color, prio = get_trading_status(text)
 
-        # Extraction du montant/prix si présent
-        price_match = re.search(
-            r"(\d+[.,]\d+)\s*(?:€|\$|USD|EUR|BTC|ETH|USDT)?",
+        # Extraction prix/montant
+        price_m = re.search(
+            r"(\d[\d\s]*[.,]\d{2})\s*(?:€|\$|USD|EUR|BTC|ETH|USDT|SOL)?",
             m["subject"] + " " + m["snippet"]
         )
-        price = price_match.group(0) if price_match else ""
+        price = price_m.group(0).strip() if price_m else ""
 
-        enriched.append({**m, "tr_status": status, "tr_color": color,
-                          "tr_priority": prio, "price": price})
+        trades.append({
+            **m,
+            "tr_status"  : status,
+            "tr_color"   : color,
+            "tr_priority": prio,
+            "price"      : price,
+        })
 
-    return sorted(enriched, key=lambda x: (x["tr_priority"], -x["date"].timestamp()))
+    return sorted(trades, key=lambda x: (x["tr_priority"], -x["date"].timestamp()))
 
 
 def _render_trading_table(trades: list, selected: set):
@@ -2151,7 +2230,7 @@ def display_cleanup(suggestions):
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║        Gmail Smart Manager — Premier Tech Edition        ║
-║              Pascal Bey  ·  v2.6  ·  2026               ║
+║              Pascal Bey  ·  v2.7  ·  2026               ║
 ╠══════════════════════════════════════════════════════════╣
 ║  🔴 Urgents   💳 Paiements   📈 Trading                  ║
 ║  📦 Colis     📊 Expéditeurs  🧹 Nettoyage               ║
