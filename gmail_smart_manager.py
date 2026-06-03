@@ -704,58 +704,90 @@ def get_payment_emails(parsed):
 
 def _compute_credit_groups(enriched: list) -> dict:
     """
-    Analyse les paiements fractionnés et retourne un dict de groupes.
+    Regroupe les paiements fractionnés en crédits cohérents.
 
-    Règles :
-    - Exclure les emails dont l'expéditeur est une promo/newsletter
-    - Exclure les groupes sans montant réel (0€)
-    - Si 0 versement payé : le montant trouvé = total (pas montant × nb_fois)
-    - Extraire le produit/service depuis le sujet de l'email
+    Logique en 3 étapes :
+      1. Identifier les emails d'ACTIVATION (création du plan)
+      2. Identifier les VERSEMENTS (payés / programmés)
+      3. Associer les versements à leur crédit par montant unitaire
     """
-    # Expéditeurs promos à exclure des crédits
+
+    # ── Expéditeurs promos à ignorer ──────────────────────────────
     PROMO_BLACKLIST = [
         "croisiere", "croisières", "destockage", "déstockage",
-        "so'croisières", "so croisières", "vacances", "voyage prive",
-        "voyageprive", "groupon", "veepee", "vente-privee",
-        "newsletter", "offre exclusive", "bon plan",
+        "vacances", "voyage prive", "voyageprive",
+        "groupon", "veepee", "vente-privee", "newsletter",
     ]
 
-    # Patterns pour détecter le produit/service dans le sujet
-    PRODUCT_PATTERNS = [
-        r"(?:pour|chez|à|for)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-\&']{2,30}?)(?:\s*[-–,]|\s+\d|\s*$)",
-        r"(?:achat|commande|order)\s+(?:de\s+)?([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-]{2,25})",
-        r"(?:EcoFlow|iPhone|Samsung|Apple|Temu|Amazon|Fnac|Cdiscount|Darty|Boulanger)[^\s]*",
-        r"([A-Z][A-Za-zÀ-ÿ0-9\s\.\-]{3,25}(?:EUROPE|Pro|Max|Ultra|Plus)?)",
+    # ── Mots-clés de statut ───────────────────────────────────────
+    INIT_KW  = [
+        "est prêt", "is ready", "a été créé", "has been set up",
+        "votre paiement en 4x est", "votre paiement en 3x est",
+        "votre paiement en 2x est", "paiement en 4x sans frais de",
+        "paiement en 3x sans frais de", "paiement en 2x sans frais de",
+        "prêt à démarrer", "votre plan de paiement",
+    ]
+    PAID_KW  = [
+        "confirmation", "confirmé", "autorisé", "a bien été",
+        "payé", "reçu", "received", "1er paiement reçu",
+        "2e paiement reçu", "3e paiement reçu", "4e paiement reçu",
+        "2ème paiement", "3ème paiement", "nous avons reçu",
+        "dernier paiement", "paiement reçu",
+    ]
+    SCHED_KW = [
+        "programmé", "à venir", "approche", "sera prélevé",
+        "upcoming", "scheduled", "prochaine échéance",
+        "rappel", "reminder",
     ]
 
-    groups = {}
+    # ── Produits connus ───────────────────────────────────────────
+    KNOWN_PRODUCTS = [
+        "EcoFlow", "iPhone", "Samsung", "MacBook", "iPad",
+        "Temu", "Fnac", "Darty", "Boulanger", "Amazon",
+        "Cdiscount", "Vistaprint", "AirPods", "PlayStation",
+        "Xbox", "Nintendo", "Dyson", "Nespresso",
+    ]
+
+    groups = {}   # clé → dict du crédit
 
     for m in enriched:
-        sender_lower = (m["sender_name"] + " " + m["sender_email"]).lower()
-        subj_lower   = (m["subject"] + " " + m["snippet"]).lower()
-        subj_orig    = m["subject"]
+        sender_low = (m["sender_name"] + " " + m["sender_email"]).lower()
+        subj_orig  = m["subject"]
+        subj_low   = (subj_orig + " " + m["snippet"]).lower()
 
-        # ── 1. Exclure les promos ──────────────────────────────────
-        if any(bl in sender_lower for bl in PROMO_BLACKLIST):
+        # ── 1. Exclure les promos ─────────────────────────────────
+        if any(bl in sender_low for bl in PROMO_BLACKLIST):
             continue
 
         # ── 2. Détecter X fois ────────────────────────────────────
         nb_fois = None
+        # Chercher "4X", "en 4 fois", "4 versements"
         xm = re.search(
-            r"en\s+(\d+)\s*x|(\d+)\s*x\s+(?:de|sans|€|\d)|paiement\s+en\s+(\d+)|"
-            r"(\d+)\s+fois\s+(?:de|sans)|versement\s+(\d+)\s*/\s*(\d+)",
-            subj_lower
+            r"(\d+)\s*x\s+(?:sans frais|de\s+\d|€)|"
+            r"en\s+(\d+)\s*(?:x|fois)|"
+            r"(\d+)\s+fois\s+(?:de|sans)|"
+            r"paiement\s+en\s+(\d+)",
+            subj_low
         )
         if xm:
             nb_fois = int(next(g for g in xm.groups() if g))
-        elif "4x" in subj_lower: nb_fois = 4
-        elif "3x" in subj_lower: nb_fois = 3
-        elif "2x" in subj_lower: nb_fois = 2
+        elif "4x" in subj_low: nb_fois = 4
+        elif "3x" in subj_low: nb_fois = 3
+        elif "2x" in subj_low: nb_fois = 2
+
+        # Détecter depuis "Xe paiement reçu pour..." → nb_fois déduit à 4 par défaut
+        ord_m = re.search(r"(\d+)(?:er|e|ème|eme)\s+paiement\s+re[çc]u", subj_low)
+        if ord_m:
+            current_num = int(ord_m.group(1))
+            if not nb_fois:
+                nb_fois = 4  # défaut PayPal/Klarna = 4x
+        else:
+            current_num = None
 
         if not nb_fois:
             continue
 
-        # ── 3. Montant unitaire ───────────────────────────────────
+        # ── 3. Montant ────────────────────────────────────────────
         amt_str = m.get("amount", "")
         try:
             unit = float(amt_str.replace(",", ".")) if amt_str else 0.0
@@ -765,87 +797,85 @@ def _compute_credit_groups(enriched: list) -> dict:
         if unit <= 0:
             continue
 
-        # ── 4. Extraire le produit/service depuis le sujet ────────
-        product = ""
-        # Chercher des noms de produits connus en premier
-        known = re.search(
-            r"(?i)(EcoFlow|iPhone|Samsung|MacBook|iPad|Temu|Fnac|Darty|"
-            r"Boulanger|Amazon|Cdiscount|Vistaprint|AirPods|PlayStation|Xbox|"
-            r"Nintendo|Dyson|Roomba|Nespresso)",
-            subj_orig
-        )
-        if known:
-            product = known.group(0)
+        # ── 4. Statut de l'email ──────────────────────────────────
+        is_init  = any(kw in subj_low for kw in INIT_KW)
+        is_paid  = any(kw in subj_low for kw in PAID_KW)
+        is_sched = any(kw in subj_low for kw in SCHED_KW)
+
+        # Email d'activation : le montant = TOTAL du crédit
+        if is_init:
+            total_for_init = unit
+            unit_for_init  = round(unit / nb_fois, 2)
         else:
-            # Pattern "pour X" ou "chez X"
+            total_for_init = None
+            unit_for_init  = unit
+
+        # ── 5. Produit/service ────────────────────────────────────
+        product = ""
+        known_m = re.search(
+            "(" + "|".join(KNOWN_PRODUCTS) + ")",
+            subj_orig, re.IGNORECASE
+        )
+        if known_m:
+            product = known_m.group(0)
+        else:
             pm = re.search(
-                r"(?:pour|chez|à)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-]{2,20})",
+                r"(?:pour|chez|à)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.\-]{2,22})",
                 subj_orig, re.IGNORECASE
             )
             if pm:
-                product = pm.group(1).strip()[:25]
-            else:
-                # Prendre les premiers mots significatifs du sujet
-                words = [w for w in subj_orig.split()
-                         if len(w) > 3 and w.lower() not in
-                         ("votre", "paiement", "confirmation", "pour", "avec",
-                          "pascal", "voici", "est", "prêt", "dans", "l'échéance",
-                          "l'échéance")]
-                if words:
-                    product = " ".join(words[:3])[:25]
+                product = pm.group(1).strip()[:22]
 
-        # ── 5. Clé de groupe : expéditeur + montant arrondi ───────
-        group_key = f"{m['sender_email']}|{round(unit, 1)}"
+        # ── 6. Clé de groupe ──────────────────────────────────────
+        # Utiliser le montant UNITAIRE pour regrouper correctement
+        # Email init → montant/nb_fois, sinon → montant tel quel
+        key_unit   = unit_for_init if is_init else unit
+        key_sender = m["sender_email"].split("@")[-1]  # domaine seulement
+        group_key  = f"{key_sender}|{round(key_unit, 1)}"
 
         if group_key not in groups:
             groups[group_key] = {
                 "sender"      : m["sender_name"] or m["sender_email"],
                 "product"     : product,
                 "nb_fois"     : nb_fois,
-                "unit_amount" : unit,
-                "total_estim" : 0.0,   # calculé après
+                "unit_amount" : key_unit,
+                "total_estim" : round(key_unit * nb_fois, 2),
                 "paid_count"  : 0,
                 "paid_total"  : 0.0,
+                "sched_count" : 0,
                 "emails"      : [],
+                "has_init"    : is_init,
             }
         g = groups[group_key]
         g["emails"].append(m)
 
-        # Mettre à jour le produit si on en trouve un meilleur
+        # Mise à jour produit
         if product and len(product) > len(g["product"]):
             g["product"] = product
 
-        # ── 6. Compter versements confirmés/reçus ─────────────────
-        confirmed_kw = [
-            "reçu", "confirmé", "autorisé", "payé", "received",
-            "confirmed", "1er paiement", "2e paiement", "2ème",
-            "3e paiement", "3ème", "4e paiement", "4ème",
-        ]
-        if any(kw in subj_lower for kw in confirmed_kw):
+        # Compter les versements selon statut
+        if is_init:
+            g["has_init"]    = True
+            # Si email init : le total est connu avec certitude
+            g["total_estim"] = total_for_init if total_for_init else g["total_estim"]
+            g["unit_amount"] = unit_for_init
+        elif is_paid:
             g["paid_count"] += 1
-            g["paid_total"]  = round(g["paid_total"] + unit, 2)
+            g["paid_total"]  = round(g["paid_total"] + key_unit, 2)
+        elif is_sched:
+            g["sched_count"] += 1
 
-    # ── 7. Calculer le total estimé avec logique corrigée ─────────
+    # ── 7. Calcul final du restant dû ─────────────────────────────
     for g in groups.values():
-        paid   = g["paid_count"]
-        nb     = g["nb_fois"]
-        unit   = g["unit_amount"]
+        g["remaining"]   = max(0.0, round(g["total_estim"] - g["paid_total"], 2))
+        g["is_complete"] = g["paid_count"] >= g["nb_fois"]
 
-        if paid == 0:
-            # Aucun versement confirmé : le montant trouvé EST probablement
-            # le total de l'échéance à venir — on ne multiplie pas
-            g["total_estim"] = unit
-            g["remaining"]   = unit
-        else:
-            # On a des versements confirmés : on peut extrapoler le total
-            g["total_estim"] = round(unit * nb, 2)
-            g["remaining"]   = max(0.0, round(g["total_estim"] - g["paid_total"], 2))
-
-        g["is_complete"] = paid >= nb
-
-    # ── 8. Filtrer les groupes sans vrais versements ET sans montant ─
-    groups = {k: g for k, g in groups.items()
-              if g["total_estim"] > 0}
+    # ── 8. Filtrer les groupes incohérents ────────────────────────
+    groups = {
+        k: g for k, g in groups.items()
+        if g["total_estim"] > 0
+        and (g["paid_count"] > 0 or g["sched_count"] > 0 or g["has_init"])
+    }
 
     return groups
 
